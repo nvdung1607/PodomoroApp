@@ -1,0 +1,44 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="vi">
+    <string name="app_name">Nhịp • Todo &amp; Pomodoro</string>
+    <string name="brand">nhịp.</string>
+    <string name="tagline">Từng việc nhỏ. Mỗi ngày tiến lên.</string>
+    <string name="tasks">Công việc</string><string name="focus">Tập trung</string><string name="goals">Mục tiêu</string><string name="stats">Thống kê</string><string name="settings">Cài đặt</string>
+    <string name="task_icon">✓</string><string name="focus_icon">◷</string><string name="goal_icon">◎</string><string name="stats_icon">▥</string>
+    <string name="inbox">Hộp thư đến</string><string name="today">Hôm nay</string><string name="upcoming">Sắp tới</string><string name="all">Tất cả</string><string name="done">Đã hoàn thành</string>
+    <string name="todo">Chưa làm</string><string name="task_in_progress">Đang làm</string><string name="overdue">Quá hạn</string>
+    <string name="task_pomodoros">Đã tập trung: %1$d Pomodoro</string>
+    <string name="overdue_count">Quá hạn: %1$d công việc</string>
+    <string name="search">Tìm tên hoặc ghi chú…</string><string name="add_task">Thêm công việc</string><string name="edit_task">Sửa công việc</string>
+    <string name="task_title">Việc cần làm</string><string name="note">Ghi chú</string><string name="planned">Ngày dự định (yyyy-mm-dd)</string><string name="deadline">Hạn chót (yyyy-mm-dd)</string>
+    <string name="priority">Ưu tiên</string><string name="low">Thấp</string><string name="normal">Vừa</string><string name="high">Cao</string><string name="estimate">Pomodoro dự kiến (không bắt buộc)</string>
+    <string name="no_goal">Không thuộc mục tiêu</string><string name="save">Lưu</string><string name="cancel">Hủy</string><string name="delete">Xóa</string><string name="undo">Hoàn tác</string><string name="close">Đóng</string>
+    <string name="edit">Sửa</string><string name="start_task">Tập trung vào việc này</string><string name="mark_done">Đánh dấu hoàn thành</string><string name="reopen">Mở lại</string>
+    <string name="empty_tasks">Để đầu óc nhẹ hơn.</string><string name="empty_tasks_hint">Ghi lại việc đầu tiên bạn muốn làm. Chỉ cần một dòng.</string><string name="no_results">Chưa có việc trong danh sách này.</string>
+    <string name="task_deleted">Đã xóa công việc</string><string name="goal_deleted">Đã xóa mục tiêu, giữ lại công việc</string><string name="invalid_form">Nhập tên, ngày hợp lệ và số dương nếu có.</string>
+    <string name="planned_value">Dự định: %1$s</string><string name="due_value">Hạn: %1$s</string><string name="estimate_value">Dự kiến %1$d Pomodoro</string>
+    <string name="add_goal">Thêm mục tiêu</string><string name="edit_goal">Sửa mục tiêu</string><string name="goal_title">Bạn muốn đạt điều gì?</string>
+    <string name="active">Đang thực hiện</string><string name="archived">Đã lưu trữ</string><string name="archive">Lưu trữ</string><string name="empty_goals">Cho công việc một hướng đi.</string><string name="empty_goals_hint">Tạo mục tiêu, rồi thêm những việc nhỏ giúp bạn tiến gần hơn.</string>
+    <string name="goal_progress">%1$d / %2$d công việc hoàn thành</string><string name="goal_no_tasks">Chưa có công việc</string><string name="goal_add_task">Thêm việc vào mục tiêu</string>
+    <string name="choose_work">Bạn muốn tập trung vào đâu?</string><string name="choose_work_hint">Chọn một công việc hoặc mục tiêu trước khi bắt đầu.</string><string name="choose">Chọn công việc / mục tiêu</string><string name="change">Đổi</string>
+    <string name="no_focus_choices">Thêm một công việc hoặc mục tiêu đang thực hiện để bắt đầu.</string>
+    <string name="start_focus">Bắt đầu tập trung</string><string name="pause">Tạm dừng</string><string name="resume">Tiếp tục</string><string name="stop">Kết thúc sớm</string><string name="skip_break">Bỏ qua nghỉ</string><string name="start_break">Bắt đầu nghỉ</string>
+    <string name="focus_phase">THỜI GIAN TẬP TRUNG</string><string name="break_phase">THỜI GIAN NGHỈ</string><string name="paused">Đang tạm dừng</string><string name="cycle_count">%1$d / 4 phiên trong vòng này</string>
+    <string name="ready_break">Bạn đã hoàn thành một nhịp!</string><string name="break_offer">Nghỉ %1$d phút để lấy lại năng lượng.</string><string name="finish_task">Hoàn thành công việc này</string>
+    <string name="stop_confirm">Kết thúc phiên này?</string><string name="stop_hint">Thời gian đã tập trung vẫn được lưu. Phiên chưa đủ giờ không được tính là một Pomodoro hoàn thành.</string>
+    <string name="permission_title">Để tập trung liền mạch</string><string name="notification_permission">Cho phép thông báo hết giờ</string><string name="alarm_permission">Cho phép báo giờ chính xác</string><string name="dnd_permission">Cho phép chế độ Không làm phiền</string>
+    <string name="alarm_hint">Chưa có quyền báo giờ chính xác: tín hiệu khi chạy nền có thể đến trễ.</string><string name="notification_hint">Thông báo hết giờ đang tắt.</string>
+    <string name="dnd_active">Không làm phiền đang bật · cho phép cuộc gọi</string><string name="dnd_ready">Đã có quyền Không làm phiền</string><string name="dnd_missing">Chưa có quyền Không làm phiền</string><string name="dnd_old">Android này cần tự cấu hình Không làm phiền và ngoại lệ cuộc gọi trong Cài đặt hệ thống.</string>
+    <string name="dnd_details">Cuộc gọi còn phụ thuộc chế độ im lặng và quy tắc hệ thống khác. Cuộc gọi Zalo/Messenger cần kiểm tra riêng. Nếu buộc dừng ứng dụng, hãy kiểm tra và tắt quy tắc Nhịp trong Cài đặt hệ thống.</string>
+    <string name="dnd_disabled">Không làm phiền tự động đang tắt</string><string name="open_dnd">Mở cài đặt Không làm phiền</string>
+    <string name="timer_channel">Kết thúc Pomodoro</string><string name="focus_finished">Đã hoàn thành phiên tập trung</string><string name="break_finished">Đã hết giờ nghỉ</string><string name="finished_hint">Mở Nhịp để chọn bước tiếp theo.</string><string name="dnd_rule">Nhịp — Tập trung</string>
+    <string name="day">Ngày</string><string name="week">Tuần</string><string name="month">Tháng</string><string name="previous">Trước</string><string name="next">Sau</string><string name="period_range">%1$s → %2$s</string>
+    <string name="pomodoros">Pomodoro</string><string name="focus_time">Phút tập trung</string><string name="completed_tasks">Việc xong trong kỳ</string><string name="aborted">Phiên dừng / gián đoạn</string><string name="daily_chart">Thời gian theo ngày</string><string name="history">Lịch sử tập trung</string><string name="empty_history">Chưa có phiên trong khoảng thời gian này.</string>
+    <string name="current_tasks">Trạng thái công việc hiện tại</string><string name="task_summary">%1$d chưa làm · %2$d đang làm · %3$d đã xong</string>
+    <string name="minutes_value">%1$d phút</string><string name="session_completed">Hoàn thành</string><string name="session_aborted">Kết thúc sớm</string><string name="session_interrupted">Bị gián đoạn</string><string name="session_running">Đang thực hiện</string>
+    <string name="today_summary">%1$d Pomodoro · %2$d phút hôm nay</string><string name="daily_progress">%1$d / %2$d Pomodoro hôm nay</string>
+    <string name="timing_settings">Nhịp làm việc của bạn</string><string name="focus_minutes">Tập trung (phút)</string><string name="short_minutes">Nghỉ ngắn (phút)</string><string name="long_minutes">Nghỉ dài (phút)</string><string name="daily_target">Mục tiêu Pomodoro mỗi ngày</string><string name="use_dnd">Tự bật Không làm phiền khi tập trung</string>
+    <string name="settings_hint">Thời lượng từ 1 đến 180 phút. Thay đổi áp dụng từ pha tiếp theo.</string><string name="saved">Đã lưu cài đặt</string><string name="backup">Dữ liệu của bạn</string><string name="backup_hint">Sao lưu công việc, mục tiêu và lịch sử vào tệp JSON. Cài đặt cá nhân giữ nguyên khi khôi phục. Hãy kết thúc phiên trước khi sao lưu hoặc khôi phục.</string>
+    <string name="export_backup">Xuất bản sao lưu</string><string name="import_backup">Khôi phục từ tệp</string><string name="export_previous">Xuất dữ liệu trước lần khôi phục gần nhất</string><string name="backup_saved">Đã xuất bản sao lưu</string><string name="restore_done">Đã khôi phục dữ liệu</string>
+    <string name="restore_title">Thay thế dữ liệu hiện tại?</string><string name="restore_hint">Tệp hợp lệ có %1$d công việc, %2$d mục tiêu và %3$d phiên. Ứng dụng sẽ lưu một bản dữ liệu cũ trước khi thay thế. Không tự khởi động bộ đếm hoặc Không làm phiền.</string><string name="restore_action">Khôi phục</string>
+    <string name="operation_failed">Không thực hiện được. Kiểm tra dữ liệu, quyền truy cập và đảm bảo không có phiên chạy khi sao lưu/khôi phục.</string><string name="settings_unavailable">Không mở được cài đặt này trên thiết bị.</string><string name="privacy_note">Lưu trên điện thoại của bạn. Không cần tài khoản.</string>
+</resources>
