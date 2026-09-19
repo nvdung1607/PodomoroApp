@@ -18,6 +18,7 @@
 3. Chạy riêng PlatformTest với quyền exact alarm được cấp từ host: 2/2 PASS, gồm rule DND cho phép mọi cuộc gọi/bật-tắt và receiver hoàn thành phiên đã lưu mà không cần Activity.
 4. Đã mở APK trên Samsung, quan sát màn hình Công việc/Mục tiêu. Các screenshot đầu trong artifacts là trước đợt đồng bộ bảng màu cuối; không xem chúng là screenshot bản cuối.
 5. `git diff --cached --check`: PASS. Không stage local.properties, build outputs, artifacts, keystore.
+6. GitHub Actions Ubuntu/Java21: build + unit tests + lint + upload APK/reports PASS. Run: https://github.com/nvdung1607/PodomoroApp/actions/runs/35445079984 (commit 8604b9b; code ứng dụng giống APK local). Các chỉnh sửa bàn giao sau đó chỉ ở tài liệu và script test-device, không đổi code ứng dụng.
 
 ## Những lần lỗi đã xử lý
 - JBR trong Android Studio thiếu jvm.cfg: dùng launcher JBR17 hợp lệ. Gradle daemon thực tế được repo pin Java21; `gradlew --version` đã xác nhận.
@@ -37,12 +38,13 @@
 
 ## Bản dùng thử
 APK: app/build/outputs/apk/debug/app-debug.apk
+Copy bàn giao local: artifacts/Nhip-debug.apk (không commit vào Git).
 SHA256: 2F164376C2840C903F2D27F853452FDD3DC6D8D725D34C163E74162DAEE67B44
 
 Không xóa dữ liệu ứng dụng để cài lại. Dùng install -r. Chưa có release signing key hoặc phát hành cửa hàng.
 
 ## Git
-Origin: https://github.com/nvdung1607/PodomoroApp.git. Đã commit và push MVP lên nhánh feature/offline-mvp theo yêu cầu triển khai dự án trên repository người dùng chỉ định. Commit MVP đầu: 4329b35. Remote xác nhận nhánh này; repository ban đầu rỗng nên GitHub dùng nó làm default branch. Các file cấu hình máy và kết quả build được ignore. Workflow Android checks sẽ build, chạy unit tests/lint và đính kèm APK/report cho các lần push; kết quả CI phải xem riêng, không suy ra từ kết quả local.
+Origin: https://github.com/nvdung1607/PodomoroApp.git. Đã commit và push MVP lên nhánh feature/offline-mvp theo yêu cầu triển khai dự án trên repository người dùng chỉ định. Commit MVP đầu: 4329b35. Remote xác nhận nhánh này; repository ban đầu rỗng nên GitHub dùng nó làm default branch. Các file cấu hình máy và kết quả build được ignore. Workflow Android checks build, chạy unit tests/lint và đính kèm APK/report; lượt đầu đã PASS như bằng chứng phía trên.
 
 ## Lượt tiếp theo
 Khi có thiết bị: chạy scripts/test-device.ps1, RecoveryProbeTest hai bước theo DEVICE-TESTS.md, kiểm tra screenshot dark/large font, gọi thử có phối hợp với người dùng, cập nhật các mục VERIFY_DEVICE. Không đổi các mục này sang DONE chỉ vì build đạt.

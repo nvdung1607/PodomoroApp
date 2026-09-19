@@ -25,6 +25,8 @@ Trên máy khác truyền đường dẫn JDK của máy đó hoặc thiết l�
 
 Lệnh connected test yêu cầu thiết bị đã cho phép USB debugging và sẽ cài APK debug/test. APK debug nằm tại app/build/outputs/apk/debug/app-debug.apk. Unit test report tại app/build/reports/tests/testDebugUnitTest/index.html.
 
+APK trên CI dùng debug key của runner, có thể khác key local. Để cập nhật mà giữ dữ liệu, dùng cùng nguồn build/signing key; nếu phải đổi nguồn hãy xuất backup trước. Chưa cấu hình khóa phát hành ổn định.
+
 Android Studio: chọn cùng JDK hoạt động ở Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JDK. Script không thay cài đặt IDE.
 
 ## Nguồn tương thích
