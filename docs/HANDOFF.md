@@ -42,7 +42,7 @@ SHA256: 2F164376C2840C903F2D27F853452FDD3DC6D8D725D34C163E74162DAEE67B44
 Không xóa dữ liệu ứng dụng để cài lại. Dùng install -r. Chưa có release signing key hoặc phát hành cửa hàng.
 
 ## Git
-Origin: https://github.com/nvdung1607/PodomoroApp.git. Remote chưa có refs lúc kiểm tra. Mã đã stage để review; chưa commit/push theo quy tắc AGENTS.md. Các file cấu hình máy và kết quả build được ignore.
+Origin: https://github.com/nvdung1607/PodomoroApp.git. Đã commit và push MVP lên nhánh feature/offline-mvp theo yêu cầu triển khai dự án trên repository người dùng chỉ định. Commit MVP đầu: 4329b35. Remote xác nhận nhánh này; repository ban đầu rỗng nên GitHub dùng nó làm default branch. Các file cấu hình máy và kết quả build được ignore. Workflow Android checks sẽ build, chạy unit tests/lint và đính kèm APK/report cho các lần push; kết quả CI phải xem riêng, không suy ra từ kết quả local.
 
 ## Lượt tiếp theo
 Khi có thiết bị: chạy scripts/test-device.ps1, RecoveryProbeTest hai bước theo DEVICE-TESTS.md, kiểm tra screenshot dark/large font, gọi thử có phối hợp với người dùng, cập nhật các mục VERIFY_DEVICE. Không đổi các mục này sang DONE chỉ vì build đạt.

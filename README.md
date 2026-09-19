@@ -20,6 +20,8 @@ Xem [BUILD.md](docs/BUILD.md). Cần JDK tương thích (đã build với JBR 17
 
 APK dùng thử: `app/build/outputs/apk/debug/app-debug.apk`. Đây là debug build; chưa có signing key phát hành hoặc cấu hình Google Play.
 
+GitHub Actions `Android checks` chạy build/unit tests/lint khi push và lưu APK/report dưới artifact `nhip-debug-and-reports`. Kiểm thử máy thật chạy riêng theo [DEVICE-TESTS.md](docs/DEVICE-TESTS.md).
+
 ## Quyền và giới hạn
 Ứng dụng hướng dẫn cấp quyền thông báo, báo thức chính xác và DND khi cần. Không có quyền thì todo vẫn dùng được; báo hết giờ khi chạy nền có thể trễ nếu thiếu exact alarm.
 
