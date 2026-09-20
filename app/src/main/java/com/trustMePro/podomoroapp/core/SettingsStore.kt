@@ -18,10 +18,27 @@ class SettingsStore(context: Context) : SettingsProvider {
     private val long = intPreferencesKey("long")
     private val target = intPreferencesKey("target")
     private val dnd = booleanPreferencesKey("dnd")
-    override val settings = store.data.map { AppSettings(it[focus] ?: 25, it[short] ?: 5, it[long] ?: 15, it[target] ?: 8, it[dnd] ?: true) }
+    private val themeKey = stringPreferencesKey("theme")
+    override val settings = store.data.map {
+        AppSettings(
+            it[focus] ?: 25,
+            it[short] ?: 5,
+            it[long] ?: 15,
+            it[target] ?: 8,
+            it[dnd] ?: true,
+            it[themeKey] ?: "SYSTEM"
+        )
+    }
     override suspend fun save(value: AppSettings) {
         require(listOf(value.focus, value.shortBreak, value.longBreak).all { it in 1..180 })
         require(value.dailyTarget in 1..100)
-        store.edit { it[focus] = value.focus; it[short] = value.shortBreak; it[long] = value.longBreak; it[target] = value.dailyTarget; it[dnd] = value.useDnd }
+        store.edit {
+            it[focus] = value.focus
+            it[short] = value.shortBreak
+            it[long] = value.longBreak
+            it[target] = value.dailyTarget
+            it[dnd] = value.useDnd
+            it[themeKey] = value.theme
+        }
     }
 }

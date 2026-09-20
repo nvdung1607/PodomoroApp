@@ -32,6 +32,8 @@ object TimerRules {
 }
 
 data class Report(val focusMs: Long, val completed: Int, val interrupted: Int, val completedTasks: Int, val daily: List<Pair<LocalDate, Long>>)
+data class DailyPomodoroStat(val date: LocalDate, val focusMs: Long, val pomodoroCount: Int)
+
 object Statistics {
     fun bounds(date: LocalDate, period: Period): Pair<LocalDate, LocalDate> {
         val start = when (period) { Period.DAY -> date; Period.WEEK -> date.minusDays((date.dayOfWeek.value - 1).toLong()); Period.MONTH -> date.withDayOfMonth(1) }
@@ -53,5 +55,60 @@ object Statistics {
         val goalTasks = data.tasks.filter { it.goalId == goalId }.map { it.id }.toSet()
         return Report(days.sumOf { it.second }, ended.count { it.status == "COMPLETED" }, ended.count { it.status in listOf("ABORTED", "INTERRUPTED") },
             data.events.filter { it.type == "COMPLETED" && it.occurredAt >= start && it.occurredAt < end && (goalId == null || it.taskId in goalTasks) }.map { it.taskId }.distinct().size, days)
+    }
+
+    fun dailyStreak(data: StoreSnapshot, today: LocalDate, zone: ZoneId): Int {
+        val activeDates = data.sessions
+            .filter { it.status == "COMPLETED" && it.endedAt != null }
+            .map { Instant.ofEpochMilli(it.endedAt!!).atZone(zone).toLocalDate() }
+            .toSet()
+
+        var current = if (today in activeDates) today else today.minusDays(1)
+        if (current !in activeDates) return 0
+        var streak = 0
+        while (current in activeDates) {
+            streak++
+            current = current.minusDays(1)
+        }
+        return streak
+    }
+
+    fun weeklyPomodoroStats(data: StoreSnapshot, today: LocalDate, zone: ZoneId): List<DailyPomodoroStat> {
+        val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        val days = (0L..6L).map { monday.plusDays(it) }
+        val completedSessions = data.sessions.filter { it.status == "COMPLETED" && it.endedAt != null }
+        val intervals = data.intervals
+
+        return days.map { day ->
+            val startMs = day.atStartOfDay(zone).toInstant().toEpochMilli()
+            val endMs = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val daySessions = completedSessions.filter { it.endedAt!! in startMs until endMs }
+            val dayFocusMs = intervals.sumOf {
+                (minOf(endMs, it.startedAt + it.durationMs) - maxOf(startMs, it.startedAt)).coerceAtLeast(0)
+            }
+            DailyPomodoroStat(
+                date = day,
+                focusMs = dayFocusMs,
+                pomodoroCount = daySessions.size
+            )
+        }
+    }
+
+    fun monthHeatmap(data: StoreSnapshot, yearMonth: YearMonth, zone: ZoneId): Map<LocalDate, Int> {
+        val startOfMonth = yearMonth.atDay(1)
+        val length = yearMonth.lengthOfMonth()
+        val startMs = startOfMonth.atStartOfDay(zone).toInstant().toEpochMilli()
+        val endMs = startOfMonth.plusMonths(1).atStartOfDay(zone).toInstant().toEpochMilli()
+
+        val sessions = data.sessions.filter { it.status == "COMPLETED" && it.endedAt != null && it.endedAt in startMs until endMs }
+        val counts = mutableMapOf<LocalDate, Int>()
+        for (dayNum in 1..length) {
+            counts[yearMonth.atDay(dayNum)] = 0
+        }
+        for (session in sessions) {
+            val date = Instant.ofEpochMilli(session.endedAt!!).atZone(zone).toLocalDate()
+            counts[date] = (counts[date] ?: 0) + 1
+        }
+        return counts
     }
 }

@@ -104,4 +104,36 @@ class RepositoryTest {
             assertEquals(1, repo.dao.tasks().size)
         } finally { folder.listFiles()?.forEach { it.delete() }; folder.delete() }
     }
+    @Test fun checklistOperationsAndPersistence() = runBlocking {
+        val task = task()
+        val c1 = ChecklistItem(taskId = task.id, title = "Việc con 1", isDone = false)
+        val c2 = ChecklistItem(taskId = task.id, title = "Việc con 2", isDone = true)
+        repo.saveChecklist(c1)
+        repo.saveChecklist(c2)
+        assertEquals(2, repo.dao.checklists(task.id).size)
+        repo.setChecklistDone(c1.id, true)
+        assertTrue(repo.dao.checklist(c1.id)!!.isDone)
+        repo.deleteChecklist(c2.id)
+        assertEquals(1, repo.dao.checklists(task.id).size)
+        assertEquals("Việc con 1", repo.dao.checklists(task.id)[0].title)
+    }
+    @Test fun startsFreeFocusSessionWithoutTaskOrGoal() = runBlocking {
+        var sessionId: String? = null
+        try {
+            repo.startFocus(null, null)
+            val session = repo.dao.sessions().single()
+            sessionId = session.id
+            assertNull(session.taskId)
+            assertNull(session.goalId)
+            assertEquals("Tập trung tự do", session.title)
+            assertEquals("RUNNING", repo.dao.timer()!!.status)
+        } finally {
+            repo.stop()
+            if (sessionId != null) {
+                val sql = repo.database.openHelper.writableDatabase
+                sql.execSQL("DELETE FROM intervals WHERE sessionId = ?", arrayOf(sessionId))
+                sql.execSQL("DELETE FROM sessions WHERE id = ?", arrayOf(sessionId))
+            }
+        }
+    }
 }

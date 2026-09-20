@@ -13,55 +13,60 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFFFB59B),
-    onPrimary = Color(0xFF5D200E),
-    primaryContainer = Color(0xFF7D331C),
-    onPrimaryContainer = Color(0xFFFFDACC),
-    secondary = Color(0xFFD1C1B3),
-    secondaryContainer = Color(0xFF51443A),
-    onSecondaryContainer = Color(0xFFEEDFD3),
-    tertiary = Color(0xFFBBCBA7),
-    background = Color(0xFF1A1410),
-    surface = Color(0xFF1A1410),
-    onSurface = Color(0xFFF1E3D9),
-    onSurfaceVariant = Color(0xFFD3C3B7),
-    surfaceContainer = Color(0xFF271F19),
-    surfaceContainerHighest = Color(0xFF3E332B)
+    primary = CoralPrimaryDark,
+    onPrimary = Color(0xFF3E1205),
+    primaryContainer = CoralContainerDark,
+    onPrimaryContainer = OnCoralContainerDark,
+    secondary = GreenSecondaryDark,
+    onSecondary = Color(0xFF003A09),
+    secondaryContainer = GreenContainerDark,
+    onSecondaryContainer = OnGreenContainerDark,
+    tertiary = AmberTertiaryDark,
+    onTertiary = Color(0xFF452200),
+    tertiaryContainer = AmberContainerDark,
+    background = BgDark,
+    surface = SurfaceDark,
+    onBackground = TextPrimaryDark,
+    onSurface = TextPrimaryDark,
+    onSurfaceVariant = TextSecondaryDark,
+    surfaceVariant = SurfaceVariantDark,
+    outline = OutlineDark,
+    surfaceContainer = SurfaceDark,
+    surfaceContainerHighest = SurfaceVariantDark
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFFA94729),
-    primaryContainer = Color(0xFFFFDACC),
+    primary = CoralPrimary,
     onPrimary = Color.White,
-    onPrimaryContainer = Color(0xFF65301D),
-    background = Color(0xFFFFF8F4),
-    surface = Color(0xFFFFF8F4),
-    onSurface = Color(0xFF30251F),
-    onSurfaceVariant = Color(0xFF675B50),
-    secondary = Color(0xFF675B50),
-    secondaryContainer = Color(0xFFE8DDD3),
-    onSecondaryContainer = Color(0xFF3B3027),
-    tertiary = Color(0xFF596547),
-    surfaceContainer = Color(0xFFF8EFE8),
-    surfaceContainerLow = Color(0xFFFCF4EE),
-    surfaceContainerHigh = Color(0xFFF1E5DB),
-    surfaceContainerHighest = Color(0xFFEBDDD1),
-    outline = Color(0xFF87786D)
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
+    primaryContainer = CoralContainerLight,
+    onPrimaryContainer = OnCoralContainerLight,
+    secondary = GreenSecondary,
     onSecondary = Color.White,
+    secondaryContainer = GreenContainerLight,
+    onSecondaryContainer = OnGreenContainerLight,
+    tertiary = AmberTertiary,
     onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    tertiaryContainer = AmberContainerLight,
+    background = BgLight,
+    surface = SurfaceLight,
+    onBackground = TextPrimaryLight,
+    onSurface = TextPrimaryLight,
+    onSurfaceVariant = TextSecondaryLight,
+    surfaceVariant = SurfaceVariantLight,
+    outline = OutlineLight,
+    surfaceContainer = SurfaceVariantLight,
+    surfaceContainerHighest = OutlineLight
 )
+
 
 @Composable
 fun PodomoroAppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: String = "SYSTEM",
+    darkTheme: Boolean = when (themeMode) {
+        "LIGHT" -> false
+        "DARK" -> true
+        else -> isSystemInDarkTheme()
+    },
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit

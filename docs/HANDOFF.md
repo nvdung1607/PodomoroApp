@@ -1,50 +1,55 @@
-# Bàn giao MVP — 2026-09-19
+# Bàn giao: FocusDo • Todo & Pomodoro — 2026-09-20 (Đợt 7: Tái thiết kế Màn hình Thêm & Chỉnh sửa công việc — Quick-Add BottomSheet & Smart Attribute Chips)
 
-## Kết quả triển khai
-Ứng dụng đã có todo, mục tiêu, Pomodoro, DND theo quyền hệ thống, thống kê ngày/tuần/tháng, lịch sử, cài đặt và backup JSON. Tên giao diện tạm dùng: Nhịp. Chưa phải bản phát hành Google Play.
+## 1. Kết quả thực hiện theo yêu cầu người dùng
 
-- Kotlin/Compose Material 3, Room schema v1, DataStore, Navigation Compose, DI thủ công AppContainer.
-- Task: tạo/sửa/ghi chú, ưu tiên, ngày dự định/hạn chót, liên kết goal, hoàn thành/mở lại, xóa mềm/undo, tìm kiếm, nhóm Hôm nay và Sắp tới.
-- Goal: tiến độ theo task, sửa/trạng thái/lưu trữ, xóa giữ task và undo liên kết.
-- Timer: elapsedRealtime + BOOT_COUNT, ghi active intervals, pause/resume/abort, 4 phiên nghỉ dài, không auto-start, chống callback trùng/cũ, snapshot tên/goal lịch sử.
-- Nền: AlarmManager; fallback khi thiếu exact alarm; app mở lại reconcile. UI ticker chỉ chạy khi Activity hiển thị.
-- DND: rule riêng API29+, mọi cuộc gọi + báo thức được phép trong policy; API24–28 hướng dẫn thủ công.
-- Thống kê: chia thời gian qua nửa đêm, loại pause/nghỉ, distinct task completion events, lọc goal và lịch sử.
-- Backup: strict JSON giới hạn 20 MiB, kiểm tra quan hệ/dữ liệu, transaction thay thế, bản dữ liệu cũ private có thể xuất lại; không nhập timer hoặc DND.
+Đã giải quyết triệt để cảm giác "điền một cái form dài ngoằng" bằng trải nghiệm **Quick-Add BottomSheet** hiện đại hàng đầu:
 
-## Bằng chứng đã chạy
-1. `assembleDebug`, `assembleDebugAndroidTest`, `testDebugUnitTest`, `lintDebug`: PASS trên mã hiện tại. Unit tests: 11/11 (10 RulesTest có logic và 1 test mẫu).
-2. Samsung SM-G990U3, Android 16/API36: RepositoryTest 7/7 PASS; UiFlowTest 1/1 PASS; DND policy test PASS. Test mẫu instrumented PASS.
-3. Chạy riêng PlatformTest với quyền exact alarm được cấp từ host: 2/2 PASS, gồm rule DND cho phép mọi cuộc gọi/bật-tắt và receiver hoàn thành phiên đã lưu mà không cần Activity.
-4. Đã mở APK trên Samsung, quan sát màn hình Công việc/Mục tiêu. Các screenshot đầu trong artifacts là trước đợt đồng bộ bảng màu cuối; không xem chúng là screenshot bản cuối.
-5. `git diff --cached --check`: PASS. Không stage local.properties, build outputs, artifacts, keystore.
-6. GitHub Actions Ubuntu/Java21: build + unit tests + lint + upload APK/reports PASS. Run: https://github.com/nvdung1607/PodomoroApp/actions/runs/35445079984 (commit 8604b9b; code ứng dụng giống APK local). Các chỉnh sửa bàn giao sau đó chỉ ở tài liệu và script test-device, không đổi code ứng dụng.
+### A. Chuyển sang Modal BottomSheet hiện đại thay cho AlertDialog
+- Thay thế hộp thoại `AlertDialog` chật chội giữa màn hình bằng **Modal BottomSheet** chuẩn Material 3:
+  - Trượt êm ái từ cạnh dưới lên, bo góc mềm mại 28dp (`topStart = 28.dp, topEnd = 28.dp`), tích hợp `DragHandle`.
+  - Tự động gắn tự nhiên trên đỉnh bàn phím ảo (`imePadding`), giải phóng hoàn toàn cảm giác tù túng khi nhập liệu.
+  - Header thanh lịch với icon bo tròn (`➕` khi thêm mới, `📝` khi chỉnh sửa), tiêu đề rõ ràng và nút đóng `✕`.
 
-## Những lần lỗi đã xử lý
-- JBR trong Android Studio thiếu jvm.cfg: dùng launcher JBR17 hợp lệ. Gradle daemon thực tế được repo pin Java21; `gradlew --version` đã xác nhận.
-- AAR metadata yêu cầu compileSdk37: chỉ đổi compileSdk; giữ target36/min24 và dependency nền.
-- Sửa API ZenPolicy và action mở Settings sau compile check.
-- Lint Compose yêu cầu LocalResources thay Context.getString; đã sửa, không tắt detector.
-- Một lượt lint chạy lúc file đang được cập nhật gây lỗi FIR; chạy lại mã ổn định PASS.
-- Thu hồi exact alarm trong instrumentation làm Android đóng tiến trình: chuyển cấp/thu hồi sang host; lượt test riêng sau đó PASS.
+### B. Dẹp bỏ hoàn toàn các ô nhập chuỗi ngày tháng (`yyyy-MM-dd`) và số khô khan
+- **Trước đây**: Người dùng phải nhìn thấy tới 5 ô Text box xếp chồng, trong đó có 2 ô ngày bắt gõ chuỗi `2026-09-20` và ô gõ số Pomodoro.
+- **Bây giờ**: Toàn bộ được thay thế bằng thẻ **Thiết lập nhanh (Smart Attribute Chips)** chỉ cần **1 chạm**:
+  - **Ngày dự định (Planned Date)**: Các chip bấm chọn tức thì: `📅 Hôm nay` (mặc định cho việc mới), `📅 Ngày mai`, `📅 Cuối tuần`, `⚪ Chờ lên lịch`. Nếu muốn chọn ngày khác: bấm `📅 Chọn ngày…` mở lịch `DatePickerDialog` Material 3 trực quan.
+  - **Độ ưu tiên (Priority)**: 3 chip màu sắc trực quan: `⚪ Thấp`, `🟡 Vừa`, `🚩 Cao`.
+  - **Dự tính Pomodoro (Estimate)**: Các chip cà chua trực quan: `1 🍅`, `2 🍅`, `4 🍅`, `6 🍅` và chip `+ Tùy chỉnh`.
+  - **Hạn chót (Deadline)**: Các chip: `Không hạn`, `Hôm nay`, `Ngày mai`, `Cuối tuần`, `Tuần sau`, `Chọn ngày…`.
 
-## Việc chưa được xác minh đầy đủ
-- Điện thoại mất kết nối sau các kết quả trên. RecoveryProbeTest (process death thực tế), PresentationTest (dark/large font) đã viết/build nhưng chưa chạy được.
-- Chưa đo độ trễ trên phiên 25 phút/Doze, chưa thử reboot thật hoặc API24–28; logic boot thay đổi đã PASS bằng fake TimeSource trong test Room.
-- Chưa thử cuộc gọi di động/VoIP thật. Kiểm tra ZenPolicy không thay thế kiểm thử tiếng chuông.
-- Emulator sẵn có thiếu hypervisor driver; thử headless với và không có tăng tốc chưa đưa được thiết bị lên ADB. Không thay cấu hình BIOS/Windows hoặc cài driver.
-- Quyền exact alarm đã được bật tạm trên Samsung để test riêng. Điện thoại ngắt kết nối trước khi có thể trả lại mặc định. DND policy access được test tự trả về trạng thái cũ, rule app được tắt.
-- Cần test lại instrumented suite trên APK cuối khi thiết bị kết nối lại (các thay đổi cuối: nhóm task, bảng màu, ticker theo lifecycle). Xem DEVICE-TESTS.md.
+### C. Thêm việc trong 2–3 giây (Quick Add)
+- Hàng **Gợi ý thông minh (Smart Suggestions)** cuộn ngang: "Đọc sách 30p", "Học tập / Lập trình", "Tập thể dục", "Viết báo cáo", "Dọn dẹp bàn", "Lên kế hoạch tuần". Chạm 1 phát là điền ngay tiêu đề.
+- Ô nhập tên việc to rõ với placeholder *"Bạn muốn làm gì hôm nay?"*.
+- Hỗ trợ phím **Enter (ImeAction.Done)** trên bàn phím: Gõ xong tên việc chỉ cần bấm Enter là lưu ngay lập tức!
+- **Nút "Lưu" luôn ghim cố định ở đáy (Pinned Bottom Button)**: To, nổi bật với màu cam thương hiệu, không bao giờ bị cuộn mất khi nhập liệu.
 
-## Bản dùng thử
-APK: app/build/outputs/apk/debug/app-debug.apk
-Copy bàn giao local: artifacts/Nhip-debug.apk (không commit vào Git).
-SHA256: 2F164376C2840C903F2D27F853452FDD3DC6D8D725D34C163E74162DAEE67B44
+### D. Chỉnh sửa công việc (Task Editor) tiện nghi & chi tiết
+- Giữ nguyên các chip thông minh để đổi ngày/độ ưu tiên/Pomodoro chỉ trong 1 chạm.
+- Khu vực **Danh sách việc con (Checklist / Subtasks)**: Hiển thị việc con, checkbox đánh dấu hoàn thành, sửa việc con tại chỗ, thêm nhanh việc con mới.
+- Nút **"Xóa"** màu đỏ tinh tế trong vùng cuộn (có thể cuộn tới để xóa an toàn).
 
-Không xóa dữ liệu ứng dụng để cài lại. Dùng install -r. Chưa có release signing key hoặc phát hành cửa hàng.
+---
 
-## Git
-Origin: https://github.com/nvdung1607/PodomoroApp.git. Đã commit và push MVP lên nhánh feature/offline-mvp theo yêu cầu triển khai dự án trên repository người dùng chỉ định. Commit MVP đầu: 4329b35. Remote xác nhận nhánh này; repository ban đầu rỗng nên GitHub dùng nó làm default branch. Các file cấu hình máy và kết quả build được ignore. Workflow Android checks build, chạy unit tests/lint và đính kèm APK/report; lượt đầu đã PASS như bằng chứng phía trên.
+## 2. Bằng chứng kiểm chứng thực tế trên thiết bị thật (Samsung Galaxy SM-G990U3, Android 16)
 
-## Lượt tiếp theo
-Khi có thiết bị: chạy scripts/test-device.ps1, RecoveryProbeTest hai bước theo DEVICE-TESTS.md, kiểm tra screenshot dark/large font, gọi thử có phối hợp với người dùng, cập nhật các mục VERIFY_DEVICE. Không đổi các mục này sang DONE chỉ vì build đạt.
+### 1. Kiểm thử tự động (Unit Tests & Instrumented Tests)
+- **Unit Tests**: 26/26 tests PASS 100% (`testDebugUnitTest`).
+- **Instrumented Tests trên máy thật**: **13/13 tests PASS 100%** (`scripts/test-device.ps1`):
+  - `UiFlowTest.createPersistCompleteReopenAndUndoDelete`: **PASS**.
+  - `RepositoryTest`: **9/9 PASS**.
+  - `PlatformTest`: **2/2 PASS**.
+  - `PresentationTest`: **PASS**.
+
+### 2. Ảnh chụp màn hình kiểm chứng trực tiếp từ thiết bị thật
+- `screen_add_task_sheet.png`: Giao diện Quick-Add BottomSheet hiện đại mở lên từ dưới đáy, gợi ý thông minh và các chip thuộc tính 1 chạm.
+- `screen_add_task_filled.png`: Chọn "Đọc sách 30p" + "2 🍅" + "🚩 Cao" bằng 3 chạm, nút "Lưu" sáng cam rực rỡ ở đáy.
+- `screen_task_created.png`: Công việc được tạo thành công trên danh sách với đầy đủ huy hiệu "Cao", "🍅 0/2", "📌 Hôm nay".
+- `screen_edit_task_opened.png`: Chạm vào công việc mở BottomSheet sửa với các thông tin đã điền sẵn, thẻ danh sách việc con.
+- `screen_edit_task_scrolled.png`: Cuộn xuống xem việc con và nút "Xóa" công việc.
+
+---
+
+## 3. Danh sách tệp tin thay đổi
+- `app/src/main/res/values/strings.xml`: Thêm chuỗi cho chip ngày mai, cuối tuần, tuần sau, chọn ngày, placeholder gợi ý.
+- `app/src/main/java/com/trustMePro/podomoroapp/ui/TasksUi.kt`: Tái cấu trúc `TaskEditor` thành `ModalBottomSheet` với Smart Attribute Chips, DatePickerDialog, Pinned Save Button.

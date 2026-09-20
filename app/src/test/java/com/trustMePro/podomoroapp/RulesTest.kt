@@ -65,4 +65,138 @@ class RulesTest {
         assertThrows(IllegalArgumentException::class.java) { BackupCodec.validate(b.copy(tasks = listOf(b.tasks[0].copy(goalId = "missing")))) }
         assertThrows(Exception::class.java) { BackupCodec.decode("{\"schemaVersion\":1}") }
     }
+    @Test fun checklistProgressAndBackupCompatibility() {
+        val task = TaskItem(id = "t1", title = "Task 1")
+        val subs = listOf(
+            ChecklistItem(id = "c1", taskId = "t1", title = "Sub 1", isDone = true),
+            ChecklistItem(id = "c2", taskId = "t1", title = "Sub 2", isDone = false)
+        )
+        val snapshot = StoreSnapshot(tasks = listOf(task), checklists = subs)
+        val taskSubs = snapshot.checklists.filter { it.taskId == task.id }
+        assertEquals(2, taskSubs.size)
+        assertEquals(1, taskSubs.count { it.isDone })
+
+        // Backup v2 with checklists
+        val b2 = BackupDocument(schemaVersion = 2, exportedAt = 100, tasks = listOf(task), goals = emptyList(), events = emptyList(), sessions = emptyList(), intervals = emptyList(), checklists = subs)
+        val json2 = BackupCodec.encode(b2)
+        val decoded2 = BackupCodec.decode(json2)
+        assertEquals(2, decoded2.safeChecklists.size)
+        assertEquals("Sub 1", decoded2.safeChecklists[0].title)
+
+        // Invalid: orphan subtask
+        assertThrows(IllegalArgumentException::class.java) {
+            BackupCodec.validate(b2.copy(checklists = listOf(ChecklistItem(id = "c3", taskId = "unknown", title = "Orphan"))))
+        }
+
+        // Backward compatibility: decode v1 json without checklists field
+        val v1Json = """{"schemaVersion":1,"exportedAt":50,"tasks":[{"id":"t1","title":"Task 1","note":"","priority":1,"status":"TODO","createdAt":1,"updatedAt":1}],"goals":[],"events":[],"sessions":[],"intervals":[]}"""
+        val decoded1 = BackupCodec.decode(v1Json)
+        assertEquals(1, decoded1.schemaVersion)
+        assertTrue(decoded1.checklists.orEmpty().isEmpty())
+    }
+
+    @Test fun dailyStreakCalculation() {
+        val today = LocalDate.of(2026, 9, 19)
+        // 3 ngày liên tiếp: 17, 18, 19
+        val sessions3 = listOf(today, today.minusDays(1), today.minusDays(2)).mapIndexed { i, d ->
+            val t = at(d, 14, 0)
+            FocusSession(id = "s$i", title = "P$i", plannedMs = 1500000, startedAt = t, endedAt = t + 1500000, status = "COMPLETED")
+        }
+        val data3 = StoreSnapshot(sessions = sessions3)
+        assertEquals(3, Statistics.dailyStreak(data3, today, zone))
+
+        // Nếu hôm nay chưa hoàn thành nhưng hôm qua có hoàn thành -> streak vẫn giữ 2 ngày (17, 18)
+        val sessionsYesterdayOnly = listOf(today.minusDays(1), today.minusDays(2)).mapIndexed { i, d ->
+            val t = at(d, 14, 0)
+            FocusSession(id = "s$i", title = "P$i", plannedMs = 1500000, startedAt = t, endedAt = t + 1500000, status = "COMPLETED")
+        }
+        val dataYesterday = StoreSnapshot(sessions = sessionsYesterdayOnly)
+        assertEquals(2, Statistics.dailyStreak(dataYesterday, today, zone))
+
+        // Nếu cả hôm nay lẫn hôm qua đều không có -> streak = 0
+        val sessionsOld = listOf(today.minusDays(2)).mapIndexed { i, d ->
+            val t = at(d, 14, 0)
+            FocusSession(id = "s$i", title = "P$i", plannedMs = 1500000, startedAt = t, endedAt = t + 1500000, status = "COMPLETED")
+        }
+        val dataOld = StoreSnapshot(sessions = sessionsOld)
+        assertEquals(0, Statistics.dailyStreak(dataOld, today, zone))
+    }
+
+    @Test fun weeklyAndHeatmapStats() {
+        val today = LocalDate.of(2026, 9, 19) // Thứ 7
+        val t = at(today, 10, 0)
+        val s = FocusSession(id = "s1", title = "Focus", plannedMs = 1500000, startedAt = t, endedAt = t + 1500000, status = "COMPLETED")
+        val interval = FocusInterval(sessionId = "s1", startedAt = t, durationMs = 1500000)
+        val data = StoreSnapshot(sessions = listOf(s), intervals = listOf(interval))
+
+        val weekly = Statistics.weeklyPomodoroStats(data, today, zone)
+        assertEquals(7, weekly.size)
+        val sat = weekly.find { it.date == today }
+        assertNotNull(sat)
+        assertEquals(1, sat!!.pomodoroCount)
+        assertEquals(1500000L, sat.focusMs)
+
+        val heatmap = Statistics.monthHeatmap(data, java.time.YearMonth.of(2026, 9), zone)
+        assertEquals(30, heatmap.size)
+        assertEquals(1, heatmap[today])
+        assertEquals(0, heatmap[today.minusDays(1)])
+    }
+
+    @Test fun timerExtendLogic() {
+        val startElapsed = 1000L
+        val originalPlanned = 1500_000L // 25 min
+        val state = TimerState(status = "RUNNING", segmentElapsed = startElapsed, remainingMs = originalPlanned, plannedMs = originalPlanned)
+
+        // Sau 10 phut (600_000 ms)
+        val nowElapsed = startElapsed + 600_000L
+        val remainingBefore = TimerRules.remaining(state, nowElapsed)
+        assertEquals(900_000L, remainingBefore) // 15 min left
+        val consumedBefore = TimerRules.consumed(state, nowElapsed)
+        assertEquals(600_000L, consumedBefore) // 10 min consumed
+
+        // Extension +1 phut (60_000 ms)
+        val additionalMs = 60_000L
+        val extendedRemaining = remainingBefore + additionalMs
+        val extendedPlanned = originalPlanned + additionalMs
+        val extendedState = state.copy(
+            segmentElapsed = nowElapsed,
+            remainingMs = extendedRemaining,
+            plannedMs = extendedPlanned
+        )
+
+        assertEquals(960_000L, TimerRules.remaining(extendedState, nowElapsed))
+        assertEquals(1560_000L, extendedState.plannedMs)
+
+        // Sau them 1 phut nua (60_000 ms)
+        val laterElapsed = nowElapsed + 60_000L
+        assertEquals(900_000L, TimerRules.remaining(extendedState, laterElapsed))
+        assertEquals(60_000L, TimerRules.consumed(extendedState, laterElapsed))
+    }
+
+    @Test fun breakTimerLogic() {
+        val breakMins = 5
+        val breakPlannedMs = breakMins * 60_000L
+        val startElapsed = 2000L
+        val breakState = TimerState(
+            phase = "BREAK",
+            status = "RUNNING",
+            segmentElapsed = startElapsed,
+            remainingMs = breakPlannedMs,
+            plannedMs = breakPlannedMs,
+            completedInCycle = 1
+        )
+        // Check remaining time at 2 minutes into break
+        val elapsedAfter2Min = startElapsed + 120_000L
+        assertEquals(180_000L, TimerRules.remaining(breakState, elapsedAfter2Min)) // 3 minutes remaining
+
+        // Extend break by +1 minute
+        val extendedRemaining = TimerRules.remaining(breakState, elapsedAfter2Min) + 60_000L
+        val extendedBreakState = breakState.copy(
+            segmentElapsed = elapsedAfter2Min,
+            remainingMs = extendedRemaining,
+            plannedMs = breakPlannedMs + 60_000L
+        )
+        assertEquals(240_000L, TimerRules.remaining(extendedBreakState, elapsedAfter2Min)) // 4 minutes remaining
+        assertEquals(360_000L, extendedBreakState.plannedMs) // 6 minutes total planned
+    }
 }

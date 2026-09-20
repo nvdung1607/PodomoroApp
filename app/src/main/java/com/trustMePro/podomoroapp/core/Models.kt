@@ -37,6 +37,12 @@ data class FocusSession(
 @Entity(tableName = "intervals", indices = [Index("sessionId")])
 data class FocusInterval(@PrimaryKey val id: String = newId(), val sessionId: String, val startedAt: Long, val durationMs: Long)
 
+@Entity(tableName = "checklists", indices = [Index("taskId")])
+data class ChecklistItem(
+    @PrimaryKey val id: String = newId(), val taskId: String, val title: String = "",
+    val isDone: Boolean = false, val order: Int = 0, val createdAt: Long = System.currentTimeMillis()
+)
+
 @Entity(tableName = "timer")
 data class TimerState(
     @PrimaryKey val id: Int = 1, val generation: String = newId(),
@@ -46,9 +52,10 @@ data class TimerState(
     val completedInCycle: Int = 0, val breakMinutes: Int = 5
 )
 
-data class AppSettings(val focus: Int = 25, val shortBreak: Int = 5, val longBreak: Int = 15, val dailyTarget: Int = 8, val useDnd: Boolean = true)
+data class AppSettings(val focus: Int = 25, val shortBreak: Int = 5, val longBreak: Int = 15, val dailyTarget: Int = 8, val useDnd: Boolean = true, val theme: String = "SYSTEM")
 data class StoreSnapshot(
     val tasks: List<TaskItem> = emptyList(), val goals: List<GoalItem> = emptyList(),
     val events: List<TaskEvent> = emptyList(), val sessions: List<FocusSession> = emptyList(),
-    val intervals: List<FocusInterval> = emptyList(), val timer: TimerState = TimerState()
+    val intervals: List<FocusInterval> = emptyList(), val timer: TimerState = TimerState(),
+    val checklists: List<ChecklistItem> = emptyList()
 )

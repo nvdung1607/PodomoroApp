@@ -9,7 +9,9 @@ import kotlinx.coroutines.SupervisorJob
 
 class AppContainer(context: Context) {
     val clock = AndroidTime(context)
-    val database = Room.databaseBuilder(context, AppDatabase::class.java, "focus.db").build()
+    val database = Room.databaseBuilder(context, AppDatabase::class.java, "focus.db")
+        .addMigrations(MIGRATION_1_2)
+        .build()
     val settings = SettingsStore(context)
     val scheduler = AndroidScheduler(context)
     val dnd = FocusDnd(context)

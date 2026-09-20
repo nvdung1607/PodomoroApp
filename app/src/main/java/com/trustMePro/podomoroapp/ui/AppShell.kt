@@ -13,14 +13,30 @@ import androidx.navigation.compose.*
 import com.trustMePro.podomoroapp.AppViewModel
 import com.trustMePro.podomoroapp.R
 import com.trustMePro.podomoroapp.core.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import android.content.res.Configuration
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 
-private data class Destination(val route: String, val label: Int, val icon: Int)
-private val destinations = listOf(Destination("tasks", R.string.tasks, R.string.task_icon), Destination("focus", R.string.focus, R.string.focus_icon), Destination("goals", R.string.goals, R.string.goal_icon), Destination("stats", R.string.stats, R.string.stats_icon))
+private data class Destination(val route: String, val label: Int, @androidx.annotation.DrawableRes val icon: Int)
+private val destinations = listOf(
+    Destination("tasks", R.string.tasks, R.drawable.ic_nav_tasks),
+    Destination("focus", R.string.focus, R.drawable.ic_nav_focus),
+    Destination("stats", R.string.stats, R.drawable.ic_nav_stats)
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable fun AppShell(model: AppViewModel) {
+@Composable fun AppShell(
+    model: AppViewModel,
+    targetRoute: String? = null,
+    onRouteHandled: () -> Unit = {}
+) {
     val data by model.data.collectAsStateWithLifecycle()
     val config by model.settings.collectAsStateWithLifecycle()
     val access by model.access.collectAsStateWithLifecycle()
@@ -33,56 +49,324 @@ private val destinations = listOf(Destination("tasks", R.string.tasks, R.string.
     val snack = remember { SnackbarHostState() }
     val resources = androidx.compose.ui.platform.LocalResources.current
     val taskSaver = remember { Saver<TaskItem?, String>(save = { Gson().toJson(it) }, restore = { Gson().fromJson(it, TaskItem::class.java) }) }
-    val goalSaver = remember { Saver<GoalItem?, String>(save = { Gson().toJson(it) }, restore = { Gson().fromJson(it, GoalItem::class.java) }) }
     var editTask by rememberSaveable(stateSaver = taskSaver) { mutableStateOf<TaskItem?>(null) }
-    var editGoal by rememberSaveable(stateSaver = goalSaver) { mutableStateOf<GoalItem?>(null) }
     var selectedTask by rememberSaveable { mutableStateOf<String?>(null) }
-    var selectedGoal by rememberSaveable { mutableStateOf<String?>(null) }
-    fun focus(task: TaskItem) { selectedTask = task.id; selectedGoal = null; nav.navigate("focus") { launchSingleTop = true } }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    fun focus(task: TaskItem) { selectedTask = task.id; nav.navigate("focus") { launchSingleTop = true } }
+
+    LaunchedEffect(targetRoute) {
+        if (targetRoute != null) {
+            nav.navigate(targetRoute) {
+                popUpTo(nav.graph.startDestinationId) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+            onRouteHandled()
+        }
+    }
+
     LaunchedEffect(model, resources) {
         for (feedback in model.feedback) {
             val result = snack.showSnackbar(resources.getString(feedback.message), if (feedback.undo != null) resources.getString(R.string.undo) else null)
             if (result == SnackbarResult.ActionPerformed) feedback.undo?.let(model::undo)
         }
     }
-    Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.brand), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary) }, actions = {
-            TextButton(onClick = { nav.navigate("settings") { launchSingleTop = true } }) { Text(stringResource(R.string.settings)) }
-        }) },
-        bottomBar = { NavigationBar { destinations.forEach { item -> NavigationBarItem(selected = route == item.route, onClick = {
-            nav.navigate(item.route) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true }
-        }, modifier = Modifier.testTag("nav_${item.route}"), icon = { Text(stringResource(item.icon), style = MaterialTheme.typography.titleLarge) }, label = { Text(stringResource(item.label)) }) } } },
+
+    Row(Modifier.fillMaxSize()) {
+        if (isLandscape && route != "settings") {
+            // Navigation Rail for Landscape
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp,
+                shadowElevation = 4.dp,
+                modifier = Modifier
+                    .width(92.dp)
+                    .fillMaxHeight()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("🍅", fontSize = 18.sp)
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    destinations.forEach { item ->
+                        val selected = route == item.route
+                        Surface(
+                            onClick = {
+                                if (route != item.route) {
+                                    nav.navigate(item.route) {
+                                        popUpTo(nav.graph.startDestinationId) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                            border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)) else null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(62.dp)
+                                .testTag("nav_${item.route}")
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    painter = androidx.compose.ui.res.painterResource(item.icon),
+                                    contentDescription = stringResource(item.label),
+                                    modifier = Modifier.size(22.dp),
+                                    tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                )
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    stringResource(item.label),
+                                    fontSize = 11.sp,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    IconButton(
+                        onClick = { nav.navigate("settings") { launchSingleTop = true } },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_settings),
+                                    contentDescription = stringResource(R.string.settings),
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Scaffold(
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+            topBar = {
+                if (!isLandscape || route == "settings") {
+                    TopAppBar(
+                        title = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (route == "settings") {
+                                    IconButton(onClick = { nav.popBackStack() }) {
+                                        Text("←", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                                    }
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        stringResource(R.string.settings),
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
+                                } else {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text("🍅", fontSize = 20.sp)
+                                        }
+                                    }
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        stringResource(R.string.brand),
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        },
+                        actions = {
+                            if (route != "settings") {
+                                IconButton(
+                                    onClick = { nav.navigate("settings") { launchSingleTop = true } },
+                                    modifier = Modifier.padding(end = 6.dp)
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                painter = androidx.compose.ui.res.painterResource(R.drawable.ic_settings),
+                                                contentDescription = stringResource(R.string.settings),
+                                                modifier = Modifier.size(19.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background
+                        )
+                    )
+                }
+            },
+            bottomBar = {
+                if (!isLandscape && route != "settings") {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 6.dp,
+                        shadowElevation = 8.dp,
+                        modifier = Modifier.fillMaxWidth().navigationBarsPadding()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(68.dp)
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            destinations.forEach { item ->
+                                val selected = route == item.route
+                                Surface(
+                                    onClick = {
+                                        if (route != item.route) {
+                                            nav.navigate(item.route) {
+                                                popUpTo(nav.graph.startDestinationId) { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)) else null,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                        .testTag("nav_${item.route}")
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            painter = androidx.compose.ui.res.painterResource(item.icon),
+                                            contentDescription = stringResource(item.label),
+                                            modifier = Modifier.size(24.dp),
+                                            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                        )
+                                        Spacer(Modifier.height(3.dp))
+                                        Text(
+                                            stringResource(item.label),
+                                            fontSize = 12.sp,
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
         snackbarHost = { SnackbarHost(snack) },
-        floatingActionButton = { when (route) {
-            "tasks" -> ExtendedFloatingActionButton(onClick = { editTask = TaskItem() }) { Text(stringResource(R.string.add_task)) }
-            "goals" -> ExtendedFloatingActionButton(onClick = { editGoal = GoalItem() }) { Text(stringResource(R.string.add_goal)) }
-        } }
+        floatingActionButton = {
+            val todayStr = java.time.LocalDate.now().toString()
+            if (route == "tasks") {
+                ExtendedFloatingActionButton(
+                    onClick = { editTask = TaskItem(plannedDate = todayStr) },
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Text("➕ ", fontSize = 15.sp)
+                    Text(stringResource(R.string.add_task), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             NavHost(navController = nav, startDestination = "tasks", modifier = Modifier.weight(1f)) {
-                composable("tasks") { TasksScreen(data, config, onEdit = { editTask = it }, onDone = model::done, onFocus = ::focus, onAdd = { editTask = TaskItem() }) }
-                composable("goals") { GoalsScreen(data, onEdit = { editGoal = it }, onAddTask = { editTask = TaskItem(goalId = it.id) }, onFocus = { selectedGoal = it.id; selectedTask = null; nav.navigate("focus") }) }
-                composable("focus") { FocusScreen(data, config, access, elapsed, selectedTask, selectedGoal, onChoose = { task, goal -> selectedTask = task; selectedGoal = goal }, model = model) }
+                composable("tasks") {
+                    val todayStr = java.time.LocalDate.now().toString()
+                    TasksScreen(
+                        data = data,
+                        settings = config,
+                        onEdit = { editTask = it },
+                        onDone = model::done,
+                        onFocus = ::focus,
+                        onAdd = { editTask = TaskItem(plannedDate = todayStr) },
+                        onSaveChecklist = model::saveChecklist,
+                        onDoneChecklist = model::doneChecklist,
+                        onDeleteChecklist = model::deleteChecklist
+                    )
+                }
+                composable("focus") { FocusScreen(data, config, access, elapsed, selectedTask, onChoose = { task -> selectedTask = task }, model = model) }
                 composable("stats") { StatsScreen(data) }
                 composable("settings") { SettingsScreen(config, access, model) }
             }
         }
     }
-    editTask?.let { task -> TaskEditor(task, data.goals.filter { it.deletedAt == null }, onDismiss = { editTask = null }, onSave = { model.saveTask(it); editTask = null }, onDelete = if (data.tasks.any { it.id == task.id }) ({ model.delete(task); editTask = null }) else null) }
-    editGoal?.let { goal -> GoalEditor(goal, onDismiss = { editGoal = null }, onSave = { model.saveGoal(it); editGoal = null }, onDelete = if (data.goals.any { it.id == goal.id }) ({ model.delete(goal); editGoal = null }) else null) }
+    }
+    editTask?.let { task ->
+        TaskEditor(
+            task = task,
+            checklists = data.checklists.filter { it.taskId == task.id },
+            onDismiss = { editTask = null },
+            onSave = { model.saveTask(it); editTask = null },
+            onDelete = if (data.tasks.any { it.id == task.id }) ({ model.delete(task); editTask = null }) else null,
+            onSaveChecklist = model::saveChecklist,
+            onDoneChecklist = model::doneChecklist,
+            onDeleteChecklist = model::deleteChecklist
+        )
+    }
     restore?.let { backup -> AlertDialog(onDismissRequest = { model.pendingRestore.value = null }, title = { Text(stringResource(R.string.restore_title)) }, text = { Text(stringResource(R.string.restore_hint, backup.tasks.size, backup.goals.size, backup.sessions.size)) }, confirmButton = { TextButton(enabled = !busy, onClick = model::confirmRestore) { Text(stringResource(R.string.restore_action)) } }, dismissButton = { TextButton(onClick = { model.pendingRestore.value = null }) { Text(stringResource(R.string.cancel)) } }) }
 }
 
 @Composable fun SectionTitle(title: String, subtitle: String? = null) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(title, style = MaterialTheme.typography.headlineMedium)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onBackground)
         if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
+
 @Composable fun EmptyCard(title: String, hint: String) {
-    Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(title, style = MaterialTheme.typography.titleLarge)
-        Text(hint, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    } }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+    ) {
+        Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+            Text("🌱", fontSize = 36.sp)
+            Text(title, style = MaterialTheme.typography.titleLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(hint, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        }
+    }
 }

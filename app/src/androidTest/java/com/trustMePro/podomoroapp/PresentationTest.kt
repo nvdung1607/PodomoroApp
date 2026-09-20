@@ -11,6 +11,8 @@ import androidx.compose.ui.unit.Density
 import androidx.lifecycle.ViewModelProvider
 import com.trustMePro.podomoroapp.ui.AppShell
 import com.trustMePro.podomoroapp.ui.theme.PodomoroAppTheme
+import com.trustMePro.podomoroapp.core.FocusApplication
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import java.io.File
@@ -23,6 +25,8 @@ class PresentationTest {
         File(folder, "$name.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
     @Test fun lightDarkAndLargeTextScreens() {
+        val repo = (compose.activity.application as FocusApplication).container.repository
+        runBlocking { if (repo.dao.timer()?.status in listOf("RUNNING", "PAUSED", "AWAITING_BREAK")) repo.stop() }
         compose.onNodeWithTag("nav_tasks").assertIsDisplayed()
         screenshot("tasks-light")
         compose.onNodeWithTag("nav_focus").performClick()

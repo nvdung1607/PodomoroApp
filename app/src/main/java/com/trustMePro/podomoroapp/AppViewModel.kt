@@ -49,10 +49,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveTask(task: TaskItem) = action { repo.saveTask(task) }
     fun done(task: TaskItem, value: Boolean) = action { repo.setTaskDone(task.id, value) }
     fun delete(task: TaskItem) = action { repo.deleteTask(task.id); feedback.send(Feedback(R.string.task_deleted) { repo.deleteTask(task.id, true) }) }
+    fun saveChecklist(item: ChecklistItem) = action { repo.saveChecklist(item) }
+    fun doneChecklist(item: ChecklistItem, value: Boolean) = action { repo.setChecklistDone(item.id, value) }
+    fun deleteChecklist(item: ChecklistItem) = action { repo.deleteChecklist(item.id) }
     fun saveGoal(goal: GoalItem) = action { repo.saveGoal(goal) }
     fun delete(goal: GoalItem) = action { val ids = repo.deleteGoal(goal.id); feedback.send(Feedback(R.string.goal_deleted) { repo.restoreGoal(goal.id, ids) }) }
-    fun start(taskId: String?, goalId: String?) = action { repo.startFocus(taskId, goalId); refreshAccess() }
-    fun startBreak() = action { repo.startBreak(); refreshAccess() }
+    fun start(taskId: String?, goalId: String?, minutes: Int? = null) = action { repo.startFocus(taskId, goalId, minutes); refreshAccess() }
+    fun startBreak(minutes: Int? = null) = action { repo.startBreak(minutes); refreshAccess() }
+    fun extendTimer(additionalMs: Long = 60_000L) = action { repo.extendCurrentTimer(additionalMs); refreshAccess() }
+    fun setFocusDuration(minutes: Int) = action { val current = container.settings.settings.first(); container.settings.save(current.copy(focus = minutes.coerceIn(1, 180))) }
     fun pause() = action { repo.pause(); refreshAccess() }
     fun resume() = action { repo.resume(); refreshAccess() }
     fun stop() = action { repo.stop(); refreshAccess() }
