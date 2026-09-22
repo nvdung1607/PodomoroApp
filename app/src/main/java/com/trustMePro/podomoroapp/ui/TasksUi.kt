@@ -678,15 +678,16 @@ fun formatFriendlyDate(dateStr: String, today: LocalDate): String {
         stringResource(R.string.today) to today.toString(),
         stringResource(R.string.tomorrow) to today.plusDays(1).toString(),
         stringResource(R.string.this_weekend) to weekendDate,
+        stringResource(R.string.next_week) to nextWeekDate,
         stringResource(R.string.no_date) to ""
     )
 
     val quickDeadlines = listOf(
-        stringResource(R.string.no_date) to "",
         stringResource(R.string.today) to today.toString(),
         stringResource(R.string.tomorrow) to today.plusDays(1).toString(),
         stringResource(R.string.this_weekend) to weekendDate,
-        stringResource(R.string.next_week) to nextWeekDate
+        stringResource(R.string.next_week) to nextWeekDate,
+        stringResource(R.string.no_date) to ""
     )
 
     fun submitTask() {
@@ -746,8 +747,8 @@ fun formatFriendlyDate(dateStr: String, today: LocalDate): String {
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (!isNewTask && onDelete != null) {
-                        IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                    if (!isNewTask) {
+                        IconButton(onClick = { onDelete?.invoke() }, modifier = Modifier.size(36.dp)) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_delete),
                                 contentDescription = stringResource(R.string.delete_task),
@@ -919,7 +920,7 @@ fun formatFriendlyDate(dateStr: String, today: LocalDate): String {
                                 shape = RoundedCornerShape(10.dp),
                                 label = {
                                     Text(
-                                        if (customSelected) "$estimate 🍅" else "+ Tùy chỉnh",
+                                        if (customSelected) "$estimate 🍅" else "+ " + stringResource(R.string.custom_minutes),
                                         style = MaterialTheme.typography.labelSmall
                                     )
                                 }

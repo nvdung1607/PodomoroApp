@@ -76,93 +76,70 @@ private val destinations = listOf(
 
     Row(Modifier.fillMaxSize()) {
         if (isLandscape && route != "settings") {
-            // Navigation Rail for Landscape
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp,
-                shadowElevation = 4.dp,
-                modifier = Modifier
-                    .width(92.dp)
-                    .fillMaxHeight()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(vertical = 12.dp, horizontal = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+            NavigationRail(
+                containerColor = MaterialTheme.colorScheme.surface,
+                header = {
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(36.dp).padding(top = 4.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text("🍅", fontSize = 18.sp)
                         }
                     }
-                    Spacer(Modifier.height(4.dp))
-                    destinations.forEach { item ->
-                        val selected = route == item.route
-                        Surface(
-                            onClick = {
-                                if (route != item.route) {
-                                    nav.navigate(item.route) {
-                                        popUpTo(nav.graph.startDestinationId) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+                },
+                modifier = Modifier.fillMaxHeight()
+            ) {
+                Spacer(Modifier.height(8.dp))
+                destinations.forEach { item ->
+                    val selected = route == item.route
+                    NavigationRailItem(
+                        selected = selected,
+                        onClick = {
+                            if (route != item.route) {
+                                nav.navigate(item.route) {
+                                    popUpTo(nav.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                            },
-                            shape = RoundedCornerShape(16.dp),
-                            color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                            border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)) else null,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(62.dp)
-                                .testTag("nav_${item.route}")
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    painter = androidx.compose.ui.res.painterResource(item.icon),
-                                    contentDescription = stringResource(item.label),
-                                    modifier = Modifier.size(22.dp),
-                                    tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                                )
-                                Spacer(Modifier.height(2.dp))
-                                Text(
-                                    stringResource(item.label),
-                                    fontSize = 11.sp,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                                )
                             }
-                        }
-                    }
-                    Spacer(Modifier.weight(1f))
-                    IconButton(
-                        onClick = { nav.navigate("settings") { launchSingleTop = true } },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_settings),
-                                    contentDescription = stringResource(R.string.settings),
-                                    modifier = Modifier.size(18.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
+                        },
+                        icon = {
+                            Icon(
+                                painter = androidx.compose.ui.res.painterResource(item.icon),
+                                contentDescription = stringResource(item.label),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        label = {
+                            Text(
+                                stringResource(item.label),
+                                fontSize = 11.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        },
+                        colors = NavigationRailItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        ),
+                        modifier = Modifier.testTag("nav_${item.route}")
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                IconButton(
+                    onClick = { nav.navigate("settings") { launchSingleTop = true } },
+                    modifier = Modifier.padding(bottom = 12.dp)
+                ) {
+                    Icon(
+                        painter = androidx.compose.ui.res.painterResource(R.drawable.ic_settings),
+                        contentDescription = stringResource(R.string.settings),
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -236,61 +213,48 @@ private val destinations = listOf(
             },
             bottomBar = {
                 if (!isLandscape && route != "settings") {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 6.dp,
-                        shadowElevation = 8.dp,
-                        modifier = Modifier.fillMaxWidth().navigationBarsPadding()
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 3.dp,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(68.dp)
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            destinations.forEach { item ->
-                                val selected = route == item.route
-                                Surface(
-                                    onClick = {
-                                        if (route != item.route) {
-                                            nav.navigate(item.route) {
-                                                popUpTo(nav.graph.startDestinationId) { saveState = true }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
+                        destinations.forEach { item ->
+                            val selected = route == item.route
+                            NavigationBarItem(
+                                selected = selected,
+                                onClick = {
+                                    if (route != item.route) {
+                                        nav.navigate(item.route) {
+                                            popUpTo(nav.graph.startDestinationId) { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                    },
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                    border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)) else null,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                        .testTag("nav_${item.route}")
-                                ) {
-                                    Column(
-                                        modifier = Modifier.fillMaxSize(),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Icon(
-                                            painter = androidx.compose.ui.res.painterResource(item.icon),
-                                            contentDescription = stringResource(item.label),
-                                            modifier = Modifier.size(24.dp),
-                                            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                                        )
-                                        Spacer(Modifier.height(3.dp))
-                                        Text(
-                                            stringResource(item.label),
-                                            fontSize = 12.sp,
-                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                                        )
                                     }
-                                }
-                            }
+                                },
+                                icon = {
+                                    Icon(
+                                        painter = androidx.compose.ui.res.painterResource(item.icon),
+                                        contentDescription = stringResource(item.label),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        stringResource(item.label),
+                                        fontSize = 12.sp,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                },
+                                alwaysShowLabel = true,
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                ),
+                                modifier = Modifier.testTag("nav_${item.route}")
+                            )
                         }
                     }
                 }

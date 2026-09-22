@@ -705,23 +705,23 @@ private fun formatFocusDuration(ms: Long): String {
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     SectionTitle(stringResource(R.string.backup), stringResource(R.string.backup_hint))
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         FilledTonalButton(
                             onClick = { export.launch("podomoro-${LocalDate.now()}.json") },
                             shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth().height(46.dp)
                         ) {
-                            Text("📤 " + stringResource(R.string.export_backup), style = MaterialTheme.typography.labelMedium)
+                            Text("📤 " + stringResource(R.string.export_backup), style = MaterialTheme.typography.labelLarge)
                         }
                         FilledTonalButton(
                             onClick = { import.launch(arrayOf("application/json", "text/plain")) },
                             shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth().height(46.dp)
                         ) {
-                            Text("📥 " + stringResource(R.string.import_backup), style = MaterialTheme.typography.labelMedium)
+                            Text("📥 " + stringResource(R.string.import_backup), style = MaterialTheme.typography.labelLarge)
                         }
                     }
                     TextButton(

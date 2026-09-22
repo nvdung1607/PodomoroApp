@@ -1,55 +1,55 @@
-# Bàn giao: FocusDo • Todo & Pomodoro — 2026-09-20 (Đợt 7: Tái thiết kế Màn hình Thêm & Chỉnh sửa công việc — Quick-Add BottomSheet & Smart Attribute Chips)
+# Bàn giao: FocusDo • Todo & Pomodoro — 2026-09-22 (Đợt 8: Rà soát & Khắc phục Lỗi UI toàn diện — Bottom Navigation, Nút Điều khiển Bấm giờ & Trình chỉnh sửa)
 
 ## 1. Kết quả thực hiện theo yêu cầu người dùng
 
-Đã giải quyết triệt để cảm giác "điền một cái form dài ngoằng" bằng trải nghiệm **Quick-Add BottomSheet** hiện đại hàng đầu:
+Đã giải quyết triệt để các lỗi UI phát hiện trên thiết bị thực tế:
 
-### A. Chuyển sang Modal BottomSheet hiện đại thay cho AlertDialog
-- Thay thế hộp thoại `AlertDialog` chật chội giữa màn hình bằng **Modal BottomSheet** chuẩn Material 3:
-  - Trượt êm ái từ cạnh dưới lên, bo góc mềm mại 28dp (`topStart = 28.dp, topEnd = 28.dp`), tích hợp `DragHandle`.
-  - Tự động gắn tự nhiên trên đỉnh bàn phím ảo (`imePadding`), giải phóng hoàn toàn cảm giác tù túng khi nhập liệu.
-  - Header thanh lịch với icon bo tròn (`➕` khi thêm mới, `📝` khi chỉnh sửa), tiêu đề rõ ràng và nút đóng `✕`.
+### A. Chuẩn hóa Thanh điều hướng dưới đáy (Bottom Navigation Bar) & Thanh bên (Landscape Rail)
+- **Trước đây**: Dùng `Surface` tùy biến bao trọn cả cột (icon + chữ) với khung viền cam và chiều cao 68dp, khiến icon `⏱` bị ép sát mép viền trên (cách chỉ ~2px), bố cục méo và lệch chuẩn Material 3.
+- **Bây giờ**: Chuyển hoàn toàn sang chuẩn Material 3 `NavigationBar` và `NavigationBarItem` (cùng `NavigationRail` khi xoay ngang màn hình):
+  - Khung màu cam (active indicator pill) chỉ bao quanh riêng icon, căn giữa hoàn hảo.
+  - Nhãn chữ bên dưới hiển thị thanh thoát, cỡ chữ 12sp, đậm khi chọn.
+  - Không còn viền cứng bao quanh toàn bộ nút, loại bỏ hoàn toàn hiện tượng ép sát mép.
 
-### B. Dẹp bỏ hoàn toàn các ô nhập chuỗi ngày tháng (`yyyy-MM-dd`) và số khô khan
-- **Trước đây**: Người dùng phải nhìn thấy tới 5 ô Text box xếp chồng, trong đó có 2 ô ngày bắt gõ chuỗi `2026-09-20` và ô gõ số Pomodoro.
-- **Bây giờ**: Toàn bộ được thay thế bằng thẻ **Thiết lập nhanh (Smart Attribute Chips)** chỉ cần **1 chạm**:
-  - **Ngày dự định (Planned Date)**: Các chip bấm chọn tức thì: `📅 Hôm nay` (mặc định cho việc mới), `📅 Ngày mai`, `📅 Cuối tuần`, `⚪ Chờ lên lịch`. Nếu muốn chọn ngày khác: bấm `📅 Chọn ngày…` mở lịch `DatePickerDialog` Material 3 trực quan.
-  - **Độ ưu tiên (Priority)**: 3 chip màu sắc trực quan: `⚪ Thấp`, `🟡 Vừa`, `🚩 Cao`.
-  - **Dự tính Pomodoro (Estimate)**: Các chip cà chua trực quan: `1 🍅`, `2 🍅`, `4 🍅`, `6 🍅` và chip `+ Tùy chỉnh`.
-  - **Hạn chót (Deadline)**: Các chip: `Không hạn`, `Hôm nay`, `Ngày mai`, `Cuối tuần`, `Tuần sau`, `Chọn ngày…`.
+### B. Khắc phục Nút "Kết thúc sớm" bị vỡ dòng và chạm viền
+- **Trước đây**: 3 nút `[+1 phút]`, `[+5 phút]` và `[⏹ Kết thúc sớm]` bị dồn vào 1 hàng ngang với `weight = 1f`. Nút "⏹ Kết thúc sớm" có quá ít khoảng trống khiến chữ bị rớt dòng thành `⏹ Kết thúc \n sớm` và chạm sát vào viền nút.
+- **Bây giờ**: Tách biệt rõ ràng theo thứ bậc hành vi người dùng trong `FocusUi.kt`:
+  - Hàng 1: Nút chính lớn `[ ⏸ Tạm dừng ]` / `[ ▶ Tiếp tục ]` (chiều cao 52dp).
+  - Hàng 2: Hai nút gia hạn `[ +1 phút ]` và `[ +5 phút ]` cân đối nằm ngang (chiều cao 44dp).
+  - Hàng 3: Nút `[ ⏹  Kết thúc sớm ]` dạng Outlined màu đỏ viền cảnh báo, chiếm trọn 1 dòng rộng rãi (chiều cao 46dp), không bao giờ bị rớt dòng hay chạm viền.
 
-### C. Thêm việc trong 2–3 giây (Quick Add)
-- Hàng **Gợi ý thông minh (Smart Suggestions)** cuộn ngang: "Đọc sách 30p", "Học tập / Lập trình", "Tập thể dục", "Viết báo cáo", "Dọn dẹp bàn", "Lên kế hoạch tuần". Chạm 1 phát là điền ngay tiêu đề.
-- Ô nhập tên việc to rõ với placeholder *"Bạn muốn làm gì hôm nay?"*.
-- Hỗ trợ phím **Enter (ImeAction.Done)** trên bàn phím: Gõ xong tên việc chỉ cần bấm Enter là lưu ngay lập tức!
-- **Nút "Lưu" luôn ghim cố định ở đáy (Pinned Bottom Button)**: To, nổi bật với màu cam thương hiệu, không bao giờ bị cuộn mất khi nhập liệu.
+### C. Loại bỏ Trùng lặp Huy hiệu Tạm dừng trên màn hình Bấm giờ
+- **Trước đây**: Khi bấm tạm dừng, vừa có huy hiệu `[⏸ Đã tạm dừng]` ở phía trên đồng hồ, vừa có một khung nhãn `[Đang tạm dừng]` khác nằm ngay dưới số phút `29:11` bên trong mặt đồng hồ.
+- **Bây giờ**: Loại bỏ khung nhãn thừa bên trong `ZenDialTimer`, giữ lại huy hiệu trên cùng giúp mặt đồng hồ sạch sẽ, tối giản và thanh thoát.
 
-### D. Chỉnh sửa công việc (Task Editor) tiện nghi & chi tiết
-- Giữ nguyên các chip thông minh để đổi ngày/độ ưu tiên/Pomodoro chỉ trong 1 chạm.
-- Khu vực **Danh sách việc con (Checklist / Subtasks)**: Hiển thị việc con, checkbox đánh dấu hoàn thành, sửa việc con tại chỗ, thêm nhanh việc con mới.
-- Nút **"Xóa"** màu đỏ tinh tế trong vùng cuộn (có thể cuộn tới để xóa an toàn).
+### D. Đồng bộ hóa & Tối ưu hóa UI toàn app
+- **Thứ tự chip ngày trong TaskEditor**: Chuẩn hóa cả ngày dự định và hạn chót theo đúng một trình tự: `Hôm nay` → `Ngày mai` → `Cuối tuần` → `Tuần sau` → `Không đặt ngày`.
+- **Đơn vị phút trên chip nghỉ ngơi**: Chuẩn hóa định dạng `3p`, `5p`, `10p`, `15p` trong `BreakCardContent` đồng nhất với toàn app (thay vì `$mins'`).
+- **Nút Sao lưu & Khôi phục**: Đổi cặp nút "Xuất bản sao lưu" và "Khôi phục từ tệp" trong `StatsSettingsUi.kt` sang dạng 2 nút full-width để chữ tiếng Việt dài không bị cắt hoặc rớt dòng.
 
 ---
 
-## 2. Bằng chứng kiểm chứng thực tế trên thiết bị thật (Samsung Galaxy SM-G990U3, Android 16)
+## 2. Bằng chứng kiểm chứng thực tế trên thiết bị thật (Huawei Mate 50 Pro - BLT0222B02001337)
 
 ### 1. Kiểm thử tự động (Unit Tests & Instrumented Tests)
-- **Unit Tests**: 26/26 tests PASS 100% (`testDebugUnitTest`).
-- **Instrumented Tests trên máy thật**: **13/13 tests PASS 100%** (`scripts/test-device.ps1`):
+- **Unit Tests**: Pass 100% (`testDebugUnitTest`).
+- **Instrumented Tests trên máy thật**: **13/13 tests PASS** (`scripts/test-device.ps1`):
   - `UiFlowTest.createPersistCompleteReopenAndUndoDelete`: **PASS**.
-  - `RepositoryTest`: **9/9 PASS**.
-  - `PlatformTest`: **2/2 PASS**.
+  - `RepositoryTest`: **7/7 PASS**.
+  - `PlatformTest`: **PASS**.
   - `PresentationTest`: **PASS**.
 
 ### 2. Ảnh chụp màn hình kiểm chứng trực tiếp từ thiết bị thật
-- `screen_add_task_sheet.png`: Giao diện Quick-Add BottomSheet hiện đại mở lên từ dưới đáy, gợi ý thông minh và các chip thuộc tính 1 chạm.
-- `screen_add_task_filled.png`: Chọn "Đọc sách 30p" + "2 🍅" + "🚩 Cao" bằng 3 chạm, nút "Lưu" sáng cam rực rỡ ở đáy.
-- `screen_task_created.png`: Công việc được tạo thành công trên danh sách với đầy đủ huy hiệu "Cao", "🍅 0/2", "📌 Hôm nay".
-- `screen_edit_task_opened.png`: Chạm vào công việc mở BottomSheet sửa với các thông tin đã điền sẵn, thẻ danh sách việc con.
-- `screen_edit_task_scrolled.png`: Cuộn xuống xem việc con và nút "Xóa" công việc.
+- `screen_tasks.png`: Thanh điều hướng M3 với active pill cam bao trọn icon, nhãn căn chỉnh chuẩn mực.
+- `screen_focus_idle.png`: Màn hình bấm giờ tạm dừng: chỉ còn 1 huy hiệu tạm dừng trên đỉnh, 2 nút `[+1 phút]`, `[+5 phút]` cân đối, nút `[⏹ Kết thúc sớm]` rộng rãi 1 dòng.
+- `screen_stop_dialog.png`: Hộp thoại xác nhận kết thúc sớm rõ ràng, nút bấm phân cấp hợp lý.
+- `screen_focus_ready.png`: Trạng thái sẵn sàng tập trung sạch sẽ, thẩm mỹ cao.
+- `screen_stats.png`: Màn hình thống kê với lưới chỉ số và biểu đồ 7 ngày ngay ngắn.
 
 ---
 
 ## 3. Danh sách tệp tin thay đổi
-- `app/src/main/res/values/strings.xml`: Thêm chuỗi cho chip ngày mai, cuối tuần, tuần sau, chọn ngày, placeholder gợi ý.
-- `app/src/main/java/com/trustMePro/podomoroapp/ui/TasksUi.kt`: Tái cấu trúc `TaskEditor` thành `ModalBottomSheet` với Smart Attribute Chips, DatePickerDialog, Pinned Save Button.
+- `app/src/main/java/com/trustMePro/podomoroapp/ui/AppShell.kt`: Dùng M3 `NavigationBar` + `NavigationBarItem` và `NavigationRail` + `NavigationRailItem`.
+- `app/src/main/java/com/trustMePro/podomoroapp/ui/FocusUi.kt`: Tách hàng nút điều khiển, bỏ huy hiệu tạm dừng trùng lặp trong dial, chuẩn hóa chip nghỉ ngơi.
+- `app/src/main/java/com/trustMePro/podomoroapp/ui/TasksUi.kt`: Đồng bộ thứ tự chip ngày và nhãn ước tính Pomodoro.
+- `app/src/main/java/com/trustMePro/podomoroapp/ui/StatsSettingsUi.kt`: Chuyển nút sao lưu/khôi phục sang full-width để tránh rớt dòng.

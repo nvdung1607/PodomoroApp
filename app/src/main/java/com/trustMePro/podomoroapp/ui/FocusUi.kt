@@ -562,20 +562,6 @@ private fun ZenDialTimer(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            if (isPaused) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Text(
-                        stringResource(R.string.paused),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
-                }
-            }
 
             // 4 Cycle Dots
             Spacer(Modifier.height(8.dp))
@@ -844,12 +830,12 @@ private fun FocusControlButtonsContent(
     if (live) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
                 onClick = onPauseResume,
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isRunning) {
                         if (isBreak) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
@@ -862,7 +848,7 @@ private fun FocusControlButtonsContent(
             ) {
                 Text(
                     (if (isRunning) "⏸  " else "▶  ") + stringResource(if (isRunning) R.string.pause else R.string.resume),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -870,13 +856,13 @@ private fun FocusControlButtonsContent(
             if (isBreak) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     FilledTonalButton(
                         onClick = onExtend1m,
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f).height(46.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer,
                             contentColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -891,8 +877,8 @@ private fun FocusControlButtonsContent(
 
                     OutlinedButton(
                         onClick = onStop,
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f).height(46.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.error
                         ),
@@ -913,9 +899,8 @@ private fun FocusControlButtonsContent(
                 ) {
                     FilledTonalButton(
                         onClick = onExtend1m,
-                        modifier = Modifier.weight(1f).height(48.dp),
+                        modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -923,16 +908,15 @@ private fun FocusControlButtonsContent(
                     ) {
                         Text(
                             stringResource(R.string.extend_1_minute),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
 
                     FilledTonalButton(
                         onClick = onExtend5m,
-                        modifier = Modifier.weight(1f).height(48.dp),
+                        modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -940,27 +924,26 @@ private fun FocusControlButtonsContent(
                     ) {
                         Text(
                             stringResource(R.string.extend_5_minute),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
+                }
 
-                    OutlinedButton(
-                        onClick = onStop,
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(1.2.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f))
-                    ) {
-                        Text(
-                            "⏹ " + stringResource(R.string.stop),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                OutlinedButton(
+                    onClick = onStop,
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.2.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f))
+                ) {
+                    Text(
+                        "⏹  " + stringResource(R.string.stop),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -968,11 +951,12 @@ private fun FocusControlButtonsContent(
         Button(
             enabled = true,
             onClick = onStart,
-            modifier = Modifier.fillMaxWidth().height(54.dp),
-            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isBreak) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
-            )
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
         ) {
             Text(
                 if (isBreak) "☕  " + stringResource(R.string.start_break) else stringResource(R.string.start_focus),
@@ -1027,7 +1011,7 @@ private fun BreakCardContent(
                         selected = selected,
                         onClick = { onSelectBreak(mins) },
                         shape = RoundedCornerShape(10.dp),
-                        label = { Text("$mins'", fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) }
+                        label = { Text("${mins}p", fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) }
                     )
                 }
                 val isCustomBreak = selectedBreakMinutes !in breakPresets
@@ -1035,7 +1019,7 @@ private fun BreakCardContent(
                     selected = isCustomBreak,
                     onClick = onCustomBreak,
                     shape = RoundedCornerShape(10.dp),
-                    label = { Text(if (isCustomBreak) "$selectedBreakMinutes'" else stringResource(R.string.custom_minutes)) }
+                    label = { Text(if (isCustomBreak) "${selectedBreakMinutes}p" else stringResource(R.string.custom_minutes)) }
                 )
             }
             Spacer(Modifier.height(4.dp))
