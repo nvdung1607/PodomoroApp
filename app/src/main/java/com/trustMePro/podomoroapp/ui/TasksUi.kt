@@ -154,31 +154,53 @@ fun formatFriendlyDate(dateStr: String, today: LocalDate): String {
                             ) {
                                 Text(
                                     stringResource(R.string.streak_badge, streak),
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    softWrap = false
                                 )
                             }
                         }
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            stringResource(R.string.today_summary, report.completed, report.focusMs / 60_000),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            "${report.completed}/${settings.dailyTarget} 🍅",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+                    if (fontScale >= 1.3f) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                stringResource(R.string.today_summary, report.completed, report.focusMs / 60_000),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                "${report.completed}/${settings.dailyTarget} 🍅",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                softWrap = false
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                stringResource(R.string.today_summary, report.completed, report.focusMs / 60_000),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "${report.completed}/${settings.dailyTarget} 🍅",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                softWrap = false
+                            )
+                        }
                     }
 
                     val target = settings.dailyTarget.coerceAtLeast(1)
@@ -543,13 +565,13 @@ fun formatFriendlyDate(dateStr: String, today: LocalDate): String {
                                             )
                                             IconButton(
                                                 onClick = { editingSubtask = item },
-                                                modifier = Modifier.size(28.dp)
+                                                modifier = Modifier.size(28.dp).semantics { contentDescription = "Sửa việc con: ${item.title}" }
                                             ) {
                                                 Text("✎", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
                                             IconButton(
                                                 onClick = { onDeleteChecklist(item) },
-                                                modifier = Modifier.size(28.dp)
+                                                modifier = Modifier.size(28.dp).semantics { contentDescription = "Xóa việc con: ${item.title}" }
                                             ) {
                                                 Text("✕", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
@@ -1005,6 +1027,11 @@ fun formatFriendlyDate(dateStr: String, today: LocalDate): String {
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
+                            Text(
+                                stringResource(R.string.subtasks_auto_save_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             checklists.forEach { item ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -1018,10 +1045,16 @@ fun formatFriendlyDate(dateStr: String, today: LocalDate): String {
                                         color = if (item.isDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                                         style = MaterialTheme.typography.bodyMedium
                                     )
-                                    IconButton(onClick = { editingSubtaskInDialog = item }) {
+                                    IconButton(
+                                        onClick = { editingSubtaskInDialog = item },
+                                        modifier = Modifier.semantics { contentDescription = "Sửa việc con: ${item.title}" }
+                                    ) {
                                         Text("✎", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                    IconButton(onClick = { onDeleteChecklist?.invoke(item) }) {
+                                    IconButton(
+                                        onClick = { onDeleteChecklist?.invoke(item) },
+                                        modifier = Modifier.semantics { contentDescription = "Xóa việc con: ${item.title}" }
+                                    ) {
                                         Text("✕", color = MaterialTheme.colorScheme.error)
                                     }
                                 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1013902382913",
+    "project_id": "focusdo-app",
+    "storage_bucket": "focusdo-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1013902382913:android:c637e5260fb4632b88b3c0",
+        "android_client_info": {
+          "package_name": "com.trustMePro.podomoroapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2crOzn0Q-yG5uLZLUQ0Sz85uFPIOh_eM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

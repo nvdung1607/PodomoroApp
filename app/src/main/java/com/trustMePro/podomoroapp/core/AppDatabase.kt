@@ -22,6 +22,7 @@ interface AppDao {
     @Query("SELECT * FROM checklists") suspend fun allChecklists(): List<ChecklistItem>
     @Query("SELECT * FROM checklists WHERE taskId = :taskId ORDER BY `order` ASC, createdAt ASC") suspend fun checklists(taskId: String): List<ChecklistItem>
     @Query("SELECT * FROM timer WHERE id = 1") suspend fun timer(): TimerState?
+    @Query("SELECT * FROM sessions WHERE status = 'COMPLETED' ORDER BY endedAt DESC LIMIT 1") suspend fun lastCompletedSession(): FocusSession?
     @Query("SELECT * FROM tasks WHERE id = :id") suspend fun task(id: String): TaskItem?
     @Query("SELECT * FROM goals WHERE id = :id") suspend fun goal(id: String): GoalItem?
     @Query("SELECT * FROM sessions WHERE id = :id") suspend fun session(id: String): FocusSession?

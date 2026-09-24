@@ -6,7 +6,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class Repository(val database: AppDatabase, val settings: SettingsProvider, val clock: TimeSource, private val scheduler: EndScheduler, private val dnd: (Boolean) -> Unit) {
+class Repository(
+    val database: AppDatabase,
+    val settings: SettingsProvider,
+    val clock: TimeSource,
+    private val scheduler: EndScheduler,
+    private val dnd: (Boolean) -> Unit,
+    var syncEngine: SyncEngine? = null
+) {
     val dao = database.dao()
     internal val mutex = Mutex()
     val snapshot = combine(
@@ -17,59 +24,88 @@ class Repository(val database: AppDatabase, val settings: SettingsProvider, val 
 
     suspend fun saveChecklist(value: ChecklistItem) = mutex.withLock {
         require(value.title.isNotBlank())
+        val item = value.copy(title = value.title.trim())
         database.withTransaction {
             require(dao.task(value.taskId)?.let { it.deletedAt == null } == true)
-            dao.save(value.copy(title = value.title.trim()))
+            dao.save(item)
         }
+        syncEngine?.pushChecklist(item)
     }
     suspend fun setChecklistDone(id: String, done: Boolean) = mutex.withLock {
-        dao.checklist(id)?.let { dao.save(it.copy(isDone = done)) }
+        val updated = dao.checklist(id)?.copy(isDone = done)
+        if (updated != null) {
+            dao.save(updated)
+            syncEngine?.pushChecklist(updated)
+        }
     }
     suspend fun deleteChecklist(id: String) = mutex.withLock {
         dao.deleteChecklist(id)
+        syncEngine?.deleteRemoteChecklist(id)
     }
 
     suspend fun saveTask(value: TaskItem) = mutex.withLock {
         require(value.title.isNotBlank())
         require(TaskRules.validDate(value.plannedDate) && TaskRules.validDate(value.dueDate))
         require(value.priority in 0..2 && (value.estimate == null || value.estimate in 1..10000))
-        database.withTransaction {
+        val saved = database.withTransaction {
             val old = dao.task(value.id)
             require(value.goalId == null || dao.goal(value.goalId)?.let { it.deletedAt == null } == true)
             // Editing an old form must not overwrite a completion made by another action.
-            dao.save(value.copy(title = value.title.trim(), updatedAt = clock.wall(), status = old?.status ?: "TODO", completedAt = old?.completedAt))
+            val item = value.copy(title = value.title.trim(), updatedAt = clock.wall(), status = old?.status ?: "TODO", completedAt = old?.completedAt)
+            dao.save(item)
+            item
         }
+        syncEngine?.pushTask(saved)
     }
     suspend fun setTaskDone(id: String, done: Boolean) = mutex.withLock {
-        database.withTransaction {
-            val task = dao.task(id) ?: return@withTransaction
-            if (task.deletedAt != null || (task.status == "DONE") == done) return@withTransaction
+        val pair = database.withTransaction {
+            val task = dao.task(id) ?: return@withTransaction null
+            if (task.deletedAt != null || (task.status == "DONE") == done) return@withTransaction null
             val now = clock.wall()
-            dao.save(task.copy(status = if (done) "DONE" else "TODO", completedAt = if (done) now else null, updatedAt = now))
-            dao.save(TaskEvent(taskId = id, type = if (done) "COMPLETED" else "REOPENED", occurredAt = now))
+            val updated = task.copy(status = if (done) "DONE" else "TODO", completedAt = if (done) now else null, updatedAt = now)
+            val event = TaskEvent(taskId = id, type = if (done) "COMPLETED" else "REOPENED", occurredAt = now)
+            dao.save(updated)
+            dao.save(event)
+            Pair(updated, event)
+        }
+        if (pair != null) {
+            syncEngine?.pushTask(pair.first)
+            syncEngine?.pushEvent(pair.second)
         }
     }
     suspend fun deleteTask(id: String, restore: Boolean = false) = mutex.withLock {
-        dao.task(id)?.let { dao.save(it.copy(deletedAt = if (restore) null else clock.wall())) }
+        val updated = dao.task(id)?.copy(deletedAt = if (restore) null else clock.wall(), updatedAt = clock.wall())
+        if (updated != null) {
+            dao.save(updated)
+            syncEngine?.pushTask(updated)
+        }
     }
     suspend fun saveGoal(value: GoalItem) = mutex.withLock {
         require(value.title.isNotBlank() && TaskRules.validDate(value.dueDate))
         require(value.status in listOf("ACTIVE", "COMPLETED", "ARCHIVED"))
-        dao.save(value.copy(title = value.title.trim()))
+        val item = value.copy(title = value.title.trim())
+        dao.save(item)
+        syncEngine?.pushGoal(item)
     }
     suspend fun deleteGoal(id: String): List<String> = mutex.withLock {
-        database.withTransaction {
-            val linked = dao.tasks().filter { it.goalId == id }.map { it.id }
-            dao.goal(id)?.let { dao.save(it.copy(deletedAt = clock.wall())) }
+        val (linked, updatedGoal) = database.withTransaction {
+            val linkedTasks = dao.tasks().filter { it.goalId == id }.map { it.id }
+            val g = dao.goal(id)?.copy(deletedAt = clock.wall())
+            if (g != null) dao.save(g)
             dao.detachGoal(id)
-            linked
+            Pair(linkedTasks, g)
         }
+        if (updatedGoal != null) syncEngine?.pushGoal(updatedGoal)
+        linked
     }
     suspend fun restoreGoal(id: String, linked: List<String>) = mutex.withLock {
-        database.withTransaction {
-            dao.goal(id)?.let { dao.save(it.copy(deletedAt = null)) }
+        val restoredGoal = database.withTransaction {
+            val g = dao.goal(id)?.copy(deletedAt = null)
+            if (g != null) dao.save(g)
             linked.forEach { taskId -> dao.task(taskId)?.takeIf { it.goalId == null }?.let { dao.save(it.copy(goalId = id)) } }
+            g
         }
+        if (restoredGoal != null) syncEngine?.pushGoal(restoredGoal)
     }
     private suspend fun sync(state: TimerState, schedule: Boolean = true) {
         if (schedule) {
@@ -95,11 +131,20 @@ class Repository(val database: AppDatabase, val settings: SettingsProvider, val 
                 goalTitle = goal?.title, plannedMs = minutes * 60_000L, startedAt = clock.wall())
             dao.save(session)
             if (task?.status == "TODO") dao.save(task.copy(status = "IN_PROGRESS", updatedAt = clock.wall()))
+            val lastSession = dao.lastCompletedSession()
+            val resetNeeded = TimerRules.shouldResetCycle(lastSession?.endedAt ?: lastSession?.startedAt, clock.wall())
+            val cycleCount = if (resetNeeded) 0 else old.completedInCycle % 4
             TimerState(generation = newId(), status = "RUNNING", sessionId = session.id, plannedMs = session.plannedMs,
                 remainingMs = session.plannedMs, segmentElapsed = clock.elapsed(), segmentWall = clock.wall(), boot = clock.boot(),
-                completedInCycle = old.completedInCycle % 4).also { dao.save(it) }
+                completedInCycle = cycleCount).also { dao.save(it) }
         }
         sync(state)
+    }
+    suspend fun resetCycle() = mutex.withLock {
+        database.withTransaction {
+            val old = dao.timer() ?: TimerState()
+            dao.save(old.copy(completedInCycle = 0))
+        }
     }
     suspend fun startBreak(customMinutes: Int? = null) = mutex.withLock {
         val old = dao.timer() ?: return@withLock
@@ -122,15 +167,19 @@ class Repository(val database: AppDatabase, val settings: SettingsProvider, val 
             val left = if (old.status == "RUNNING") TimerRules.remaining(old, nowElapsed) else old.remainingMs
             if (left <= 0L && old.status == "RUNNING") return@withTransaction finish(old, true)
 
-            val newRemaining = left + additionalMs
-            val newPlanned = old.plannedMs + additionalMs
+            val maxPlannedMs = 180 * 60_000L // 10_800_000L (max 180 minutes per PRD)
+            val effectiveAdditional = minOf(additionalMs, (maxPlannedMs - old.plannedMs).coerceAtLeast(0L))
+            if (effectiveAdditional <= 0L) return@withTransaction old
+
+            val newRemaining = left + effectiveAdditional
+            val newPlanned = old.plannedMs + effectiveAdditional
 
             if (old.status == "RUNNING") {
                 closeSegment(old, nowElapsed)
             }
             if (old.sessionId != null) {
                 dao.session(old.sessionId)?.let { session ->
-                    dao.save(session.copy(plannedMs = session.plannedMs + additionalMs))
+                    dao.save(session.copy(plannedMs = session.plannedMs + effectiveAdditional))
                 }
             }
 
@@ -149,8 +198,14 @@ class Repository(val database: AppDatabase, val settings: SettingsProvider, val 
     private suspend fun closeSegment(state: TimerState, elapsed: Long): Long {
         val amount = TimerRules.consumed(state, elapsed)
         if (state.phase == "FOCUS" && state.sessionId != null && amount > 0) {
-            dao.save(FocusInterval(sessionId = state.sessionId, startedAt = state.segmentWall, durationMs = amount))
-            dao.session(state.sessionId)?.let { dao.save(it.copy(activeMs = it.activeMs + amount)) }
+            val interval = FocusInterval(sessionId = state.sessionId, startedAt = state.segmentWall, durationMs = amount)
+            dao.save(interval)
+            syncEngine?.pushInterval(interval)
+            dao.session(state.sessionId)?.let {
+                val updated = it.copy(activeMs = it.activeMs + amount)
+                dao.save(updated)
+                syncEngine?.pushSession(updated)
+            }
         }
         return amount
     }
@@ -158,7 +213,9 @@ class Repository(val database: AppDatabase, val settings: SettingsProvider, val 
         val amount = if (!interrupted && state.status == "RUNNING") closeSegment(state, clock.elapsed()) else 0L
         val end = if (state.status == "RUNNING" && !interrupted) state.segmentWall + amount else clock.wall()
         if (state.sessionId != null) dao.session(state.sessionId)?.let { session ->
-            dao.save(session.copy(endedAt = maxOf(end, session.startedAt), status = if (interrupted) "INTERRUPTED" else if (completed) "COMPLETED" else "ABORTED"))
+            val updated = session.copy(endedAt = maxOf(end, session.startedAt), status = if (interrupted) "INTERRUPTED" else if (completed) "COMPLETED" else "ABORTED")
+            dao.save(updated)
+            syncEngine?.pushSession(updated)
         }
         val count = state.completedInCycle + if (completed && state.phase == "FOCUS") 1 else 0
         val config = settings.settings.first()
@@ -169,16 +226,23 @@ class Repository(val database: AppDatabase, val settings: SettingsProvider, val 
     }
     suspend fun pause() = mutex.withLock {
         var completed = false
+        var wasFocus = false
         val state = database.withTransaction {
             val old = dao.timer() ?: return@withTransaction null
             if (old.status != "RUNNING") return@withTransaction null
             if (old.boot != clock.boot()) return@withTransaction finish(old, false, true)
             val nowElapsed = clock.elapsed()
             val left = TimerRules.remaining(old, nowElapsed)
-            if (left == 0L) { completed = true; finish(old, true) }
-            else { closeSegment(old, nowElapsed); old.copy(status = "PAUSED", remainingMs = left, generation = newId()).also { dao.save(it) } }
+            if (left == 0L) {
+                completed = true
+                wasFocus = old.phase == "FOCUS"
+                finish(old, true)
+            } else {
+                closeSegment(old, nowElapsed)
+                old.copy(status = "PAUSED", remainingMs = left, generation = newId()).also { dao.save(it) }
+            }
         }
-        state?.let { sync(it); if (completed) scheduler.completed(it.phase == "FOCUS") }
+        state?.let { sync(it); if (completed) scheduler.completed(wasFocus) }
     }
     suspend fun resume() = mutex.withLock {
         val old = dao.timer() ?: return@withLock
@@ -189,6 +253,7 @@ class Repository(val database: AppDatabase, val settings: SettingsProvider, val 
     }
     suspend fun stop() = mutex.withLock {
         var completed = false
+        var wasFocus = false
         val state = database.withTransaction {
             val old = dao.timer() ?: return@withTransaction null
             if (old.status !in listOf("RUNNING", "PAUSED", "AWAITING_BREAK")) return@withTransaction null
@@ -196,13 +261,15 @@ class Repository(val database: AppDatabase, val settings: SettingsProvider, val 
             else {
                 val interrupted = old.boot != clock.boot()
                 completed = !interrupted && old.status == "RUNNING" && TimerRules.remaining(old, clock.elapsed()) == 0L
+                wasFocus = old.phase == "FOCUS"
                 finish(old, completed, interrupted)
             }
         }
-        state?.let { sync(it); if (completed) scheduler.completed(it.phase == "FOCUS") }
+        state?.let { sync(it); if (completed) scheduler.completed(wasFocus) }
     }
     suspend fun reconcile(generation: String? = null, reschedule: Boolean = false) = mutex.withLock {
         var completed = false
+        var wasFocus = false
         var changed = false
         val state = database.withTransaction {
             val old = dao.timer() ?: return@withTransaction TimerState()
@@ -210,10 +277,13 @@ class Repository(val database: AppDatabase, val settings: SettingsProvider, val 
             if (old.status in listOf("RUNNING", "PAUSED") && old.boot != clock.boot()) {
                 changed = true; finish(old, false, true)
             } else if (old.status == "RUNNING" && TimerRules.remaining(old, clock.elapsed()) == 0L) {
-                changed = true; completed = true; finish(old, true)
+                changed = true
+                completed = true
+                wasFocus = old.phase == "FOCUS"
+                finish(old, true)
             } else old
         }
         if (changed || reschedule) sync(state)
-        if (completed) scheduler.completed(state.phase == "FOCUS")
+        if (completed) scheduler.completed(wasFocus)
     }
 }

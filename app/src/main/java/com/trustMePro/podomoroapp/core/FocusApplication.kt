@@ -15,7 +15,10 @@ class AppContainer(context: Context) {
     val settings = SettingsStore(context)
     val scheduler = AndroidScheduler(context)
     val dnd = FocusDnd(context)
-    val repository = Repository(database, settings, clock, scheduler, dnd::apply)
+    val authService = AuthService()
+    val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    val syncEngine = SyncEngine(authService, database, syncScope, settings)
+    val repository = Repository(database, settings, clock, scheduler, dnd::apply, syncEngine)
 }
 class FocusApplication : Application() {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

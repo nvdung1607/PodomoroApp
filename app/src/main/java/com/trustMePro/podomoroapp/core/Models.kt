@@ -52,7 +52,7 @@ data class TimerState(
     val completedInCycle: Int = 0, val breakMinutes: Int = 5
 )
 
-data class AppSettings(val focus: Int = 25, val shortBreak: Int = 5, val longBreak: Int = 15, val dailyTarget: Int = 8, val useDnd: Boolean = true, val theme: String = "SYSTEM")
+data class AppSettings(val focus: Int = 25, val shortBreak: Int = 5, val longBreak: Int = 15, val dailyTarget: Int = 8, val useDnd: Boolean = true, val theme: String = "SYSTEM", val skipAuthPrompt: Boolean = false, val lastSyncedUid: String? = null)
 data class StoreSnapshot(
     val tasks: List<TaskItem> = emptyList(), val goals: List<GoalItem> = emptyList(),
     val events: List<TaskEvent> = emptyList(), val sessions: List<FocusSession> = emptyList(),

@@ -173,6 +173,19 @@ class RulesTest {
         assertEquals(60_000L, TimerRules.consumed(extendedState, laterElapsed))
     }
 
+    @Test fun timerExtendClampAt180Min() {
+        val maxPlanned = 10_800_000L // 180 min
+        val nearMaxState = TimerState(status = "RUNNING", segmentElapsed = 0, remainingMs = 60_000L, plannedMs = maxPlanned - 30_000L) // 179.5 min
+        val effectiveAdd = minOf(60_000L, (maxPlanned - nearMaxState.plannedMs).coerceAtLeast(0L))
+        assertEquals(30_000L, effectiveAdd)
+        val clampedPlanned = nearMaxState.plannedMs + effectiveAdd
+        assertEquals(maxPlanned, clampedPlanned)
+
+        val atMaxState = nearMaxState.copy(plannedMs = maxPlanned)
+        val effectiveAddAtMax = minOf(60_000L, (maxPlanned - atMaxState.plannedMs).coerceAtLeast(0L))
+        assertEquals(0L, effectiveAddAtMax)
+    }
+
     @Test fun breakTimerLogic() {
         val breakMins = 5
         val breakPlannedMs = breakMins * 60_000L
@@ -198,5 +211,29 @@ class RulesTest {
         )
         assertEquals(240_000L, TimerRules.remaining(extendedBreakState, elapsedAfter2Min)) // 4 minutes remaining
         assertEquals(360_000L, extendedBreakState.plannedMs) // 6 minutes total planned
+    }
+
+    @Test fun cycleAutoResetOnNewDayOrLongHiatus() {
+        val today = LocalDate.of(2026, 9, 23)
+        val tenAmToday = at(today, 10, 0)
+
+        // 1. No previous session -> no reset needed (already 0)
+        assertFalse(TimerRules.shouldResetCycle(null, tenAmToday, zone))
+
+        // 2. Previous session was yesterday -> should reset
+        val yesterdayEvening = at(today.minusDays(1), 21, 0)
+        assertTrue(TimerRules.shouldResetCycle(yesterdayEvening, tenAmToday, zone))
+
+        // 3. Previous session was today, but > 3 hours ago -> should reset
+        val fourHoursAgo = tenAmToday - (4 * 3600_000L)
+        assertTrue(TimerRules.shouldResetCycle(fourHoursAgo, tenAmToday, zone))
+
+        // 4. Previous session was today, 30 minutes ago -> should NOT reset
+        val thirtyMinsAgo = tenAmToday - (30 * 60_000L)
+        assertFalse(TimerRules.shouldResetCycle(thirtyMinsAgo, tenAmToday, zone))
+
+        // 5. Previous session was today, 2.5 hours ago -> should NOT reset
+        val twoAndHalfHoursAgo = tenAmToday - (150 * 60_000L)
+        assertFalse(TimerRules.shouldResetCycle(twoAndHalfHoursAgo, tenAmToday, zone))
     }
 }

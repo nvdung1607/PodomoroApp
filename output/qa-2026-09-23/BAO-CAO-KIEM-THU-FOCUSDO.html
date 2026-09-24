@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Báo cáo kiểm thử FocusDo · 24/09/2026</title>
+<style>
+:root{color-scheme:light;--ink:#17212b;--muted:#53616e;--line:#dce3e8;--accent:#9c3218}
+*{box-sizing:border-box}body{margin:0;background:#eef2f5;color:var(--ink);font:16px/1.7 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:#17212b;color:#fff;padding:34px max(24px,calc((100vw - 1100px)/2));border-bottom:5px solid #db6849}
+header small{letter-spacing:.12em;text-transform:uppercase;color:#b9c9d7}header strong{display:block;font-size:30px;line-height:1.3;margin:7px 0}header p{margin:8px 0;color:#d2dce4}
+main{max-width:1160px;background:white;margin:28px auto;padding:42px 48px;box-shadow:0 8px 32px #17212b0c;border:1px solid var(--line);border-radius:12px}
+h1{font-size:32px;line-height:1.25}h2{font-size:24px;margin:46px 0 18px;padding-top:22px;border-top:2px solid var(--line)}h3{font-size:20px;line-height:1.4;margin:34px 0 12px;color:#7f2b17;border-left:4px solid #d97960;padding:8px 14px;background:#fff5f1}
+p{margin:12px 0}a{color:#9b3218;text-underline-offset:3px}a:hover{color:#521608}strong{font-weight:650}
+table{width:100%;border-collapse:collapse;display:block;overflow:auto;font-size:14px;margin:22px 0}th{background:#e9eef2;text-align:left}th,td{padding:12px 14px;border:1px solid var(--line);vertical-align:top;min-width:160px}tr:nth-child(even){background:#f8fafb}
+code{font-size:.87em;background:#f0f3f6;border-radius:4px;padding:2px 5px;overflow-wrap:anywhere}pre{background:#17212b;color:#eef4f8;padding:20px;border-radius:8px;overflow:auto}pre code{background:none;padding:0}
+img{display:block;max-width:100%;max-height:760px;object-fit:contain;object-position:left top;margin:18px 0 32px;border:1px solid var(--line);border-radius:8px;cursor:zoom-in}
+li{margin:10px 0}footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:36px;padding-top:18px}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.actions a,.actions button{font:inherit;border:1px solid #adbecb;background:#fff;color:#17212b;padding:8px 14px;border-radius:7px;text-decoration:none;cursor:pointer}
+@media(max-width:700px){main{margin:0;border:0;border-radius:0;padding:24px 18px}h1{font-size:26px}h2{font-size:22px}h3{font-size:18px}header{padding:24px 18px}table{font-size:13px}}
+@media print{body{background:#fff;font-size:10pt}main{margin:0;padding:0;border:0;box-shadow:none;max-width:none}header,.actions{display:none}h2,h3{break-after:avoid}table{display:table;font-size:9pt}th,td{min-width:0;padding:6px}img{max-height:650px;break-inside:avoid}a{color:inherit}pre{white-space:pre-wrap}footer{display:none}}
+</style></head><body>
+<header><small>Quality assurance · Android · Evidence-based review</small><strong>FocusDo — Báo cáo kiểm thử trải nghiệm</strong><p>32 phát hiện · Samsung API 36 · Kiểm thử thực tế, ảnh gốc và đối chiếu mã nguồn</p></header>
+<main><div class="actions"><a href="BAO-CAO-KIEM-THU-FOCUSDO.md" download>Tải bản Markdown</a><button onclick="window.print()">In / Lưu PDF</button></div>
+<h1 id="bao-cao-kiem-thu-trai-nghiem-focusdo-podomoroapp">Báo cáo kiểm thử trải nghiệm FocusDo / PodomoroApp</h1>
+<p><strong>Kết luận: CHƯA ĐẠT để phát hành rộng.</strong> Luồng công việc và bấm giờ cơ bản dùng được, nhưng còn lỗi điều hướng, vỡ bố cục khi tăng chữ, số liệu thống kê sai và cài đặt hiển thị khác trạng thái thực. Phần đồng bộ có nhiều đường đi có thể làm sai hoặc trộn dữ liệu. Bộ kiểm thử Android của chính bản hiện tại không biên dịch được.</p>
+<p>Kiểm tra trực tiếp tối <strong>23/09/2026</strong>, hoàn thiện báo cáo <strong>24/09/2026</strong>. Đây là kiểm thử khám phá trên bản làm việc hiện tại, không phải chứng nhận đã kiểm hết mọi tổ hợp thiết bị/quyền/mạng.</p>
+<h2 id="ban-uoc-kiem-tra-va-cach-thu-thap-bang-chung">1. Bản được kiểm tra và cách thu thập bằng chứng</h2>
+<table>
+<thead>
+<tr>
+<th>Hạng mục</th>
+<th>Thực tế</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Repository</td>
+<td>nvdung1607/PodomoroApp; remote origin đúng repository được giao</td>
+</tr>
+<tr>
+<td>Nhánh / HEAD</td>
+<td><code>feature/firebase-sync</code> / <code>07567ac</code>, cộng các thay đổi chưa commit đã có trước khi kiểm tra</td>
+</tr>
+<tr>
+<td>Thiết bị</td>
+<td>Samsung SM-G990U3, Android API 36</td>
+</tr>
+<tr>
+<td>APK</td>
+<td>versionName 1.0; cài trên máy từ 23/09/2026 22:29:36</td>
+</tr>
+<tr>
+<td>Xác minh bản</td>
+<td>SHA-256 APK cài trên máy và <code>app-debug.apk</code> giống nhau: <code>E16DD7DCDDF431479CC6E0F02B5A210190BE99629DB7BFDBBDB11C712A98D875</code></td>
+</tr>
+<tr>
+<td>Màn hình</td>
+<td>1080 × 2340; thử dọc và ngang 2340 × 1080</td>
+</tr>
+<tr>
+<td>Chữ / theme</td>
+<td>Cỡ chữ ban đầu 0,9×; thử 1,6×; sáng theo hệ thống và tối trong app</td>
+</tr>
+<tr>
+<td>Cách thao tác</td>
+<td>Chạm, gõ, vuốt, Back/Home qua ADB; ảnh gốc PNG và cây UI XML từ điện thoại</td>
+</tr>
+<tr>
+<td>Tài khoản</td>
+<td>Máy đã đăng nhập sẵn một tài khoản thử nghiệm. Không đăng xuất/đổi tài khoản, không tạo tài khoản mới</td>
+</tr>
+<tr>
+<td>Dữ liệu thử</td>
+<td>Công việc tiền tố <code>QA_2309_…</code>, việc con <code>QA_child</code>, một phiên dừng sớm và một phiên tự do hoàn thành 1 phút</td>
+</tr>
+<tr>
+<td>Can thiệp mã nguồn</td>
+<td>Không sửa mã ứng dụng, không commit/push, không ghi đè các thay đổi có sẵn</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Quy ước bằng chứng:</strong> “Tái hiện” = đã thấy trên máy; “Đo/đối chiếu” = có màu nguồn, cây UI hoặc log build; “Mã nguồn” = đường lỗi được chỉ ra từ code nhưng chưa chạy đầy đủ tình huống đó. P1 cần xử lý trước phát hành; P2 ảnh hưởng đáng kể trải nghiệm/độ tin cậy; P3 cải thiện khả năng sử dụng. Không có lỗi P0 đã được chứng minh trong đợt này.</p>
+<p>Tổng cộng <strong>32 phát hiện</strong>: QA-01–QA-17 có quan sát/đo/kiểm tra build; QA-18–QA-32 là lỗi hoặc rủi ro qua mã nguồn cần kiểm chứng thêm. Một số mục là vấn đề UX, không phải crash.</p>
+<h2 id="ket-qua-build-va-kiem-thu-tu-ong">2. Kết quả build và kiểm thử tự động</h2>
+<table>
+<thead>
+<tr>
+<th>Lệnh / kiểm tra</th>
+<th>Kết quả thật</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>./scripts/build.ps1 -JdkPath 'C:/Users/dungk/.jdks/jbr-17.0.14' -Tasks ':app:assembleDebug',':app:testDebugUnitTest',':app:lintDebug'</code></td>
+<td>BUILD SUCCESSFUL, 1m 5s</td>
+</tr>
+<tr>
+<td>Unit test</td>
+<td>Gradle báo UP-TO-DATE. XML hiện có: 24 tests, 0 failures/errors/skips: RulesTest 16, SyncTest 7, ExampleUnitTest 1. Đây là xác nhận kết quả còn hợp lệ theo Gradle, không phải 24 tests vừa được chạy lại</td>
+</tr>
+<tr>
+<td>Lint</td>
+<td>Chạy thành công, <strong>104 warnings</strong>, không có error. Không biến cảnh báo thư viện mới thành yêu cầu nâng dependency</td>
+</tr>
+<tr>
+<td><code>./scripts/build.ps1 -JdkPath 'C:/Users/dungk/.jdks/jbr-17.0.14' -Tasks ':app:assembleDebugAndroidTest'</code></td>
+<td><strong>FAILED</strong> tại <code>compileDebugAndroidTestKotlin</code></td>
+</tr>
+<tr>
+<td>Instrumented tests của bản hiện tại</td>
+<td><strong>BLOCKED</strong>, chưa chạy được do lỗi biên dịch test. Không dùng APK test cũ để tuyên bố PASS</td>
+</tr>
+</tbody>
+</table>
+<p>Lỗi biên dịch thực tế:</p>
+<pre><code class="language-text">RepositoryTest.kt:27:48 No value passed for parameter 'dnd'.
+RepositoryTest.kt:29:12 Argument type mismatch: actual type is 'Function0&lt;Unit&gt;', but 'SyncEngine?' was expected.
+RepositoryTest.kt:29:26 Unresolved reference 'it'.
+</code></pre>
+<p><code>SyncTest</code> chủ yếu kiểm tra chuyển object ↔ map. Nó không chứng minh đồng bộ hai máy, phân tách tài khoản, giải quyết xung đột hay bảo toàn lịch sử hoạt động đúng. Các kết quả PASS trong HANDOFF trước đây thuộc bản/tình huống trước, không thay thế kiểm tra bản này.</p>
+<h2 id="loi-a-tai-hien-o-hoac-quan-sat">3. Lỗi đã tái hiện, đo hoặc quan sát</h2>
+<h3 id="qa-01-p1-nut-cong-viec-mo-nham-man-bam-gio">QA-01 · P1 · Nút “Công việc” mở nhầm màn Bấm giờ</h3>
+<p><strong>Tái hiện:</strong> từ danh sách, bấm cà chua của một công việc → sang Thống kê → bấm tab Công việc. Màn hiện ra vẫn là Bấm giờ; bấm lại tab không đưa về danh sách. Back hệ thống mới quay về công việc. Đã lặp lại sau khi trả cỡ chữ về 0,9×.</p>
+<p><strong>Kỳ vọng:</strong> tab Công việc luôn đưa tới danh sách công việc. <strong>Tác động:</strong> điều hướng chính mất độ tin cậy; người dùng tưởng ứng dụng bị kẹt.</p>
+<p><strong>Dấu vết:</strong> <code>ui/AppShell.kt:90</code> mở focus bằng một cách khác với điều hướng tab có <code>popUpTo/saveState/restoreState</code> tại dòng 260. Cần thống nhất back stack của đường mở từ task và đường mở bằng tab; thêm test đúng chuỗi trên, cả sau xoay màn hình.</p>
+<p><strong>Bằng chứng:</strong> <code>37-nav-repro.png/.xml</code>, <code>35-nav-task-fails.png</code>, <code>36-back.png</code>. Ảnh sau thao tác thể hiện màn sai; chuỗi thao tác được ghi trong báo cáo, không có video.</p>
+<h3 id="qa-02-p1-chu-lon-lam-the-muc-tieu-thong-ke-vo-thanh-cot-ky-tu">QA-02 · P1 · Chữ lớn làm thẻ mục tiêu thống kê vỡ thành cột ký tự</h3>
+<p><strong>Tái hiện:</strong> cỡ chữ 1,6× → Thống kê → cuộn lên đầu. Phần <code>1 / 8 🍅 (12%)</code> bị ép vào mép phải, xuống dòng từng ký tự; thẻ tăng chiều cao bất thường, đẩy các chỉ số xuống xa.</p>
+<p><strong>Chi tiết pixel:</strong> khối tiêu đề chiếm gần hết chiều ngang tới x=984; phần số bị ép vào cột sát mép phải. Ảnh gốc 1080 × 2340 cho thấy thẻ mục tiêu kéo dài xuống sát thanh điều hướng. Đây là lỗi bố cục, không chỉ là sở thích thẩm mỹ.</p>
+<p><strong>Kỳ vọng/sửa:</strong> chia thành hai hàng khi không đủ rộng, cho tiêu đề co giãn và số giữ nguyên cụm; bỏ giả định hai nội dung dài luôn vừa một Row. Nguồn: <code>ui/StatsSettingsUi.kt:166–190</code>.</p>
+<p><strong>Bằng chứng:</strong> <code>32-stats-large-top.png/.xml</code>.</p>
+<h3 id="qa-03-p2-the-tom-tat-cong-viec-cung-vo-khi-tang-chu">QA-03 · P2 · Thẻ tóm tắt Công việc cũng vỡ khi tăng chữ</h3>
+<p><strong>Tái hiện:</strong> cỡ chữ 1,6× → Công việc. <code>1/8 🍅</code> trở thành cột dọc sát mép phải; dòng “1 Pomodoro · 4 phút hôm nay” chạm phần số. Huy hiệu chuỗi ngày xuống dòng emoji, thẻ đầu trang chiếm quá nhiều diện tích.</p>
+<p><strong>Chi tiết đo:</strong> XML cho phần <code>1/8 🍅</code> bounds <code>[961,519][990,869]</code>: chỉ 29 px ngang nhưng cao 350 px. <strong>Kỳ vọng:</strong> số tiến độ đọc trọn cụm, không tranh chỗ với câu tóm tắt. Sửa Row trong <code>ui/TasksUi.kt:166–185</code> thành bố cục thích ứng.</p>
+<p><strong>Bằng chứng:</strong> <code>38-task-large.png/.xml</code>.</p>
+<h3 id="qa-04-p2-nhan-chu-ky-e-len-vong-ong-ho-khi-chu-lon">QA-04 · P2 · Nhãn chu kỳ đè lên vòng đồng hồ khi chữ lớn</h3>
+<p><strong>Tái hiện:</strong> chữ 1,6×, xoay ngang, vào Bấm giờ. “Phiên 1 / 4 trong vòng này” xuống hai dòng và nền nhãn phủ qua viền tròn. Biểu tượng thông tin không còn thấy trong cây UI của trạng thái này. Nút bắt đầu ở cột bên phải chỉ xuất hiện một phần trước khi cuộn.</p>
+<p><strong>Kỳ vọng:</strong> nhãn có vùng riêng, không cắt viền đồng hồ; hành động chính dễ thấy. Cột phải có cuộn nên chưa kết luận nút không thể bấm. Nguồn: <code>ui/FocusUi.kt:545–643</code>, dial giới hạn 190dp ở ngang.</p>
+<p><strong>Bằng chứng:</strong> <code>29-landscape-large.png/.xml</code>; <code>28-focus-large.png</code> cho trường hợp dọc.</p>
+<h3 id="qa-05-p2-dark-mode-e-bieu-tuong-he-thong-en-tren-nen-gan-en">QA-05 · P2 · Dark mode để biểu tượng hệ thống đen trên nền gần đen</h3>
+<p><strong>Tái hiện:</strong> Cài đặt → Tối, trong khi hệ thống đang sáng. Đồng hồ, pin và icon thanh trạng thái gần như chìm vào nền. <strong>Kỳ vọng:</strong> đổi cả màu icon hệ thống theo theme app.</p>
+<p><strong>Nguyên nhân phù hợp:</strong> <code>MainActivity.kt</code> gọi <code>enableEdgeToEdge()</code> trước khi Compose áp dụng theme riêng, không thấy cập nhật system bar theo lựa chọn. <strong>Sửa:</strong> đồng bộ appearance của status/navigation bars với theme đang hiển thị.</p>
+<p><strong>Bằng chứng:</strong> <code>22-theme-welcome.png</code> (tên tệp là nhãn chụp; ảnh thực tế là Cài đặt tối, không phải welcome), <code>29-landscape-large.png</code>.</p>
+<h3 id="qa-06-p2-cam-sang-khong-u-tuong-phan-cho-nhieu-chu-nho">QA-06 · P2 · Cam sáng không đủ tương phản cho nhiều chữ nhỏ</h3>
+<p><strong>Đo từ mã màu:</strong> trắng <code>#FFFFFF</code> trên cam <code>#FF5722</code> đạt <strong>3,16:1</strong>; cam đó trên nền <code>#FAF8F5</code> đạt <strong>2,98:1</strong>. Các nhãn nhỏ như tab đang chọn và nhãn trong nút/chip cần được rà soát, không đánh đồng mọi chữ lớn với chữ nhỏ.</p>
+<p>Dùng ngưỡng tham chiếu <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html">W3C WCAG 1.4.3</a>: 4,5:1 cho chữ thường, 3:1 cho chữ lớn. Đây là đo màu nguồn, không phải suy ra màu chính xác từ ảnh nén hay chứng nhận toàn ứng dụng đạt/không đạt WCAG.</p>
+<p><strong>Kỳ vọng/sửa:</strong> dùng sắc cam đậm hơn cho chữ/action nhỏ hoặc đổi màu chữ tương ứng; giữ sắc cam sáng cho trang trí nếu phù hợp. Nguồn: <code>ui/theme/Color.kt</code>, <code>Theme.kt</code>. Ảnh tham chiếu: <code>01-initial.png</code>, <code>03-editor.png</code>.</p>
+<h3 id="qa-07-p1-lich-tu-tinh-moi-pomodoro-thanh-25-phut-so-lieu-sai">QA-07 · P1 · Lịch tự tính mỗi Pomodoro thành 25 phút, số liệu sai</h3>
+<p><strong>Tái hiện:</strong> Thống kê cho thấy 1 Pomodoro và tổng khoảng 4 phút; chạm 23/09 trên lịch lại hiển thị <code>1 Pomodoro (25p)</code>. Phiên có thể là 1, 15, 45, 60 phút hoặc được gia hạn; nhân 25 không có cơ sở.</p>
+<p><strong>Nguyên nhân:</strong> <code>ui/StatsSettingsUi.kt:639</code> dùng <code>selCount * 25</code>. <strong>Kỳ vọng:</strong> tính bằng active intervals theo ngày; phân biệt tổng focus và số phiên hoàn thành. Ngày chỉ có phiên dừng sớm cũng không nên mô tả là “Chưa có phiên tập trung” chỉ vì số Pomodoro hoàn thành bằng 0.</p>
+<p><strong>Bằng chứng:</strong> <code>16-stats.png</code>, <code>20-wrong-minutes.png/.xml</code>.</p>
+<h3 id="qa-08-p2-chon-tuan-truoc-nhung-van-ghi-phut-hom-nay">QA-08 · P2 · Chọn tuần trước nhưng vẫn ghi “phút hôm nay”</h3>
+<p><strong>Tái hiện:</strong> Thống kê → Tuần → tuần trước. Tiêu đề là <code>14/09 - 20/09</code> nhưng dòng dưới là <code>0 Pomodoro · 0 phút hôm nay</code>.</p>
+<p><strong>Nguyên nhân:</strong> tái sử dụng <code>today_summary</code> cho mọi kỳ tại <code>StatsSettingsUi.kt:139</code>; chuỗi ở <code>strings.xml:47</code>. <strong>Sửa:</strong> nhãn “trong kỳ”, hoặc nhãn riêng theo ngày/tuần/tháng; tránh để người dùng hiểu sai dữ liệu.</p>
+<p><strong>Bằng chứng:</strong> <code>17-stats-week.png</code>, <code>32-stats-large-top.png</code>.</p>
+<h3 id="qa-09-p2-bieu-o-khong-i-theo-ky-thong-ke-ang-chon">QA-09 · P2 · Biểu đồ không đi theo kỳ thống kê đang chọn</h3>
+<p><strong>Tái hiện:</strong> chọn tuần 14–20/09. Lịch sử báo không có phiên trong kỳ, nhưng biểu đồ phía trên vẫn có 4p ở thứ Tư của tuần hiện tại, lịch vẫn có hoạt động ngày 23/09.</p>
+<p><strong>Phân tích:</strong> <code>weeklyStats</code> dùng <code>today</code>, không dùng <code>date</code> đang chọn (<code>StatsSettingsUi.kt:58,249</code>). Lịch có bộ chuyển tháng riêng, nên không nhất thiết phải đi theo bộ lọc chung, nhưng giao diện không phân định phạm vi rõ. Riêng biểu đồ “Thời gian theo ngày” dễ bị đọc như số liệu của kỳ đã chọn.</p>
+<p><strong>Sửa:</strong> cho biểu đồ theo bộ lọc, hoặc ghi rõ “Tuần hiện tại 21–27/09” và phân vùng các bộ lọc độc lập. <strong>Bằng chứng:</strong> <code>18-stats-chart.png</code>, <code>19-calendar.png</code>, <code>32-stats-large-top.png</code>.</p>
+<h3 id="qa-10-p1-gia-tri-cai-at-sai-chan-ca-oi-theme-ma-khong-bao-loi">QA-10 · P1 · Giá trị cài đặt sai chặn cả đổi theme mà không báo lỗi</h3>
+<p><strong>Tái hiện:</strong> nhập <code>181</code> vào Tập trung (phút) → không có lỗi cạnh ô → chọn Sáng. Chip Sáng được chọn nhưng toàn app vẫn tối. Sau khi chọn lại 60p hợp lệ, theme sáng mới áp dụng.</p>
+<p><strong>Kỳ vọng:</strong> đánh dấu trường không hợp lệ ngay; theme độc lập với lỗi thời lượng. <strong>Nguyên nhân:</strong> <code>applySettings()</code> chỉ lưu khi tất cả trường hợp lệ, trong khi state chip thay trước. <code>valid</code> được tính nhưng không dùng để thể hiện lỗi. Nguồn: <code>StatsSettingsUi.kt:651–675,933</code>.</p>
+<p><strong>Bằng chứng:</strong> <code>42-invalid-181.png/.xml</code>, <code>43-theme-not-applied.png</code>, <code>44-restored-duration.png</code>. Khi gõ nhanh cũng có lần giá trị trung gian quay về 18; cần test race nhập liệu riêng, chưa tính thành lỗi đã xác nhận độc lập.</p>
+<h3 id="qa-11-p2-xoa-viec-con-mat-ngay-khong-co-hoan-tac">QA-11 · P2 · Xóa việc con mất ngay, không có Hoàn tác</h3>
+<p><strong>Tái hiện:</strong> mở Chi tiết của task QA → bấm dấu ✕ cạnh việc con. Việc con biến mất ngay; không có xác nhận hoặc Snackbar Hoàn tác. Đây là dữ liệu QA tự tạo, không phải dữ liệu người dùng bị xóa.</p>
+<p><strong>Kỳ vọng:</strong> thao tác dễ bấm nhầm nên có hoàn tác, nhất là hai icon sửa/xóa đặt sát nhau. <code>TasksUi.kt:550</code> gọi delete trực tiếp; <code>AppViewModel.deleteChecklist()</code> không gửi undo như xóa task cha.</p>
+<p><strong>Bằng chứng:</strong> <code>07-expanded.png</code>, <code>59-child-deleted.png/.xml</code>.</p>
+<h3 id="qa-12-p2-mot-man-sua-cong-viec-co-hai-co-che-luu-khac-nhau">QA-12 · P2 · Một màn “Sửa công việc” có hai cơ chế lưu khác nhau</h3>
+<p><strong>Tái hiện:</strong> thêm <code>QA_child</code> trong màn sửa → bấm Back, không bấm Lưu. Việc con vẫn xuất hiện trong danh sách. Tên/ghi chú lại là bản nháp chờ Lưu.</p>
+<p><strong>Tác động:</strong> người dùng không biết Back có hủy sửa hay không; có thể tưởng đã bỏ thay đổi việc con. <strong>Sửa:</strong> thống nhất toàn màn là draft + Save, hoặc ghi rõ việc con lưu ngay và cung cấp undo. Nguồn: callback checklist trong <code>TasksUi.kt</code> và <code>AppShell.kt:374–379</code>.</p>
+<p><strong>Bằng chứng:</strong> <code>05-child-draft.png</code>, <code>06-child-added.png/.xml</code>.</p>
+<h3 id="qa-13-p2-ang-focus-bat-tuy-chon-dnd-nhung-thieu-quyen-lai-khong-canh-bao-tai-cho">QA-13 · P2 · Đang focus, bật tùy chọn DND nhưng thiếu quyền lại không cảnh báo tại chỗ</h3>
+<p><strong>Quan sát:</strong> Cài đặt có tùy chọn tự bật DND và nút “Cho phép chế độ Không làm phiền”, nhưng màn focus đang chạy không có cảnh báo DND chưa hoạt động.</p>
+<p><strong>Nguyên nhân:</strong> banner chỉ nhận <code>config.useDnd &amp;&amp; access.dndActive</code> và cảnh báo exact alarm; không có nhánh thiếu quyền DND/notification. <strong>Kỳ vọng:</strong> trạng thái rõ “Không làm phiền chưa bật” và hành động cấp quyền, không ép người dùng tự tìm trong Cài đặt. Nguồn: <code>FocusUi.kt:318,1213</code>.</p>
+<p><strong>Bằng chứng:</strong> <code>12-running.png</code>, <code>23-settings-bottom.png</code>. Không kết luận đã test cuộc gọi/DND thật; quyền DND chưa được cấp trong đợt này.</p>
+<h3 id="qa-14-p1-bo-instrumented-test-hien-tai-khong-build-uoc">QA-14 · P1 · Bộ instrumented test hiện tại không build được</h3>
+<p><code>Repository</code> thêm <code>syncEngine</code> sau tham số hàm <code>dnd</code>; test vẫn truyền trailing lambda nên lambda bị gán vào SyncEngine. <strong>Tác động:</strong> mất đường kiểm chứng Room/UI/platform của bản hiện tại. <strong>Sửa:</strong> cập nhật lời gọi dùng <code>dnd = { ... }</code>, build lại rồi chạy tests trên đúng APK. Không sửa test trong đợt audit này.</p>
+<p><strong>Bằng chứng:</strong> log lỗi ở mục 2; <code>core/Repository.kt:9–15</code>, <code>androidTest/.../RepositoryTest.kt:27–29</code>.</p>
+<h3 id="qa-15-p2-nhieu-nut-chi-co-ky-hieu-thieu-ten-hanh-ong-cho-tro-nang">QA-15 · P2 · Nhiều nút chỉ có ký hiệu, thiếu tên hành động cho trợ năng</h3>
+<p><strong>Đối chiếu cây UI và code:</strong> nút cà chua trên task chỉ có chữ <code>🍅</code>; sửa/xóa việc con là <code>✎</code>/<code>✕</code>; quay lại là <code>←</code>; chuyển kỳ là <code>‹</code>/<code>›</code>. Thiếu mô tả kiểu “Tập trung với công việc…”, “Sửa việc con…”, “Tháng trước”.</p>
+<p><strong>Kỳ vọng:</strong> đặt accessible name theo hành động, có đối tượng khi có nhiều dòng. Icon việc con được vẽ trong khung 28dp, nhưng Compose có thể mở rộng touch target; chưa dùng kích thước vẽ này để khẳng định chính xác vùng chạm chỉ 28dp. Chưa bật TalkBack và nghe thực tế.</p>
+<p><strong>Bằng chứng:</strong> <code>07-expanded.xml</code>, <code>21-settings.xml</code>, <code>18-stats-chart.xml</code>; <code>TasksUi.kt:357,544–555</code>, <code>AppShell.kt</code>, <code>StatsSettingsUi.kt</code>.</p>
+<h3 id="qa-16-p3-khong-at-ngay-chon-ngay-va-tab-a-hoan-thanh-kho-phat-hien">QA-16 · P3 · “Không đặt ngày”, chọn ngày và tab Đã hoàn thành khó phát hiện</h3>
+<p><strong>Quan sát:</strong> ở cỡ chữ thường, hàng ngày chỉ hiện Hôm nay/Ngày mai/Cuối tuần/Tuần sau; các lựa chọn tiếp nằm ngoài mép phải. Bộ lọc task cũng không thấy Đã hoàn thành nếu chưa vuốt ngang. Mép chip bị cắt nhưng không có chỉ dẫn/overflow rõ.</p>
+<p><strong>Tác động:</strong> người mới dễ nghĩ bắt buộc phải lên lịch hoặc không có danh sách việc đã xong. <strong>Sửa:</strong> đưa “Không đặt ngày”/icon lịch thành hành động rõ; bố trí các filter dễ khám phá. Đây là nhận xét UX, không phải kết luận các lựa chọn bị mất hoàn toàn.</p>
+<p><strong>Bằng chứng:</strong> <code>03-editor.png</code>, <code>05-child-draft.png</code>, <code>04-created.png</code>.</p>
+<h3 id="qa-17-p2-noi-dung-dnd-noi-chac-hon-kha-nang-a-uoc-chung-minh">QA-17 · P2 · Nội dung DND nói chắc hơn khả năng đã được chứng minh</h3>
+<p><strong>Quan sát:</strong> cùng màn Cài đặt có câu “cho phép cuộc gọi SIM và các ứng dụng Zalo, Messenger”, rồi phía dưới lại nói cuộc gọi Zalo/Messenger cần kiểm tra riêng. Giờ nghỉ nói “Đã tắt Không làm phiền… để bạn nhận thông báo”, dù app chỉ nên nói về rule của mình, không thể bảo đảm mọi rule khác đã tắt.</p>
+<p><strong>Sửa:</strong> diễn đạt theo quyền và trạng thái thực; phân biệt rule app với chế độ toàn hệ thống; không hứa VoIP khi chưa test. Nguồn: <code>strings.xml:40,92</code>, <code>FocusUi.kt:311</code>. <strong>Bằng chứng:</strong> <code>23-settings-bottom.png</code>, <code>56-break-running.png</code>.</p>
+<h2 id="loirui-ro-phat-hien-tu-ma-nguon-chua-chung-minh-ay-u-tren-hai-may">4. Lỗi/rủi ro phát hiện từ mã nguồn — chưa chứng minh đầy đủ trên hai máy</h2>
+<h3 id="qa-18-p1-ong-bo-session-nhung-khong-ong-bo-intervals">QA-18 · P1 · Đồng bộ session nhưng không đồng bộ intervals</h3>
+<p><code>SyncEngine</code> upload/listen sessions, không có đường tương đương cho <code>FocusInterval</code>. Trong khi <code>Statistics.report()</code> cộng thời gian từ intervals. <strong>Tình huống cần test:</strong> máy A hoàn thành 25 phút → máy B đăng nhập → B có 1 Pomodoro nhưng thiếu 25 phút focus. BackupValidator còn yêu cầu tổng intervals bằng session.activeMs, nên bản export ở máy B có thể không import lại được.</p>
+<p><strong>Sửa:</strong> đồng bộ đầy đủ lịch sử thời gian hoặc thiết kế nguồn dữ liệu báo cáo nhất quán; kiểm tra round-trip trên thiết bị nhận. Nguồn: <code>SyncEngine.kt:122–134,230–254</code>, <code>Rules.kt:report</code>, <code>Backup.kt:41–42</code>.</p>
+<h3 id="qa-19-p1-hoan-thanh-task-khi-chua-ang-nhap-khong-uoc-upload-u-lich-su-sau-ang-nhap">QA-19 · P1 · Hoàn thành task khi chưa đăng nhập không được upload đủ lịch sử sau đăng nhập</h3>
+<p><code>pushEvent()</code> bỏ qua khi không có user. <code>syncAll()</code> sau đó upload tasks/goals/checklists/sessions nhưng bỏ events. <strong>Tình huống:</strong> hoàn thành task offline khi chưa có tài khoản → đăng nhập → máy khác nhận task DONE nhưng thiếu sự kiện hoàn thành trong kỳ.</p>
+<p><strong>Sửa:</strong> upload events trong initial/manual sync, có retry và idempotency. Nguồn: <code>SyncEngine.kt:217–259</code>.</p>
+<h3 id="qa-20-p1-chuyen-tai-khoan-co-the-ay-du-lieu-tai-khoan-truoc-sang-tai-khoan-sau">QA-20 · P1 · Chuyển tài khoản có thể đẩy dữ liệu tài khoản trước sang tài khoản sau</h3>
+<p>Auth logout chỉ signOut; Room dùng chung, không có ownerId/phân vùng. Khi login mới, <code>syncAll()</code> upload toàn bộ Room vào UID hiện tại. <strong>Rủi ro:</strong> dữ liệu của A có thể bị upload lên B trên cùng điện thoại. Chưa thử đổi tài khoản thật để tránh trộn dữ liệu.</p>
+<p><strong>Sửa:</strong> tách dữ liệu theo tài khoản và xác định rõ luồng nhập dữ liệu khách, không mặc định upload toàn bộ. Nguồn: <code>AuthService.kt:signOut</code>, <code>SyncEngine.kt:42–47,230–254</code>, <code>Models.kt</code>.</p>
+<h3 id="qa-21-p1-initialmanual-sync-co-the-ghi-e-du-lieu-moi-bang-ban-cu">QA-21 · P1 · Initial/manual sync có thể ghi đè dữ liệu mới bằng bản cũ</h3>
+<p><code>syncAll()</code> dùng <code>.set(..., merge())</code> vô điều kiện cho mọi task. Kiểm tra <code>updatedAt</code> chỉ có ở chiều nhận, không bảo vệ server khi upload. Listener và upload khởi động gần nhau.</p>
+<p><strong>Tình huống cần test:</strong> B offline với task cũ, A sửa task mới, B login/manual sync → bản cũ có thể lên server trước khi merge đúng. <strong>Sửa:</strong> quy tắc conflict có version/transaction hoặc hàng đợi mutation; test cả clock skew. Nguồn: <code>SyncEngine.kt:46–48,77,230–254</code>.</p>
+<h3 id="qa-22-p1-xoa-viec-con-khong-uoc-ap-dung-o-may-nhan">QA-22 · P1 · Xóa việc con không được áp dụng ở máy nhận</h3>
+<p>Chiều gửi xóa document cloud; chiều nghe chỉ duyệt <code>snapshot.documents</code> và save phần còn tồn tại, không xử lý document REMOVED hay tombstone. <strong>Hậu quả dự kiến:</strong> máy B giữ việc con đã xóa; lần syncAll của B có thể tạo lại nó trên cloud.</p>
+<p><strong>Sửa:</strong> đồng bộ tombstone hoặc xử lý document changes REMOVED với cơ chế offline phù hợp. Nguồn: <code>SyncEngine.kt:105–119,191–201,247–250</code>.</p>
+<h3 id="qa-23-p1-a-ong-bo-an-toan-chua-phan-anh-xac-nhan-ay-u-tu-server">QA-23 · P1 · “Đã đồng bộ an toàn” chưa phản ánh xác nhận đầy đủ từ server</h3>
+<p>Các hàm push gọi Firestore <code>.set()</code>/<code>.delete()</code> mà không await hoặc gắn failure listener, nên try/catch không bắt lỗi Task bất đồng bộ. Listener tasks có thể đặt Synced, còn nhiều listener khác bỏ qua error. Trạng thái thành công không kiểm tra pending writes/fromCache hay toàn bộ tập dữ liệu.</p>
+<p><strong>Kỳ vọng:</strong> phân biệt đang chờ, lưu cục bộ, đã xác nhận server và lỗi. <strong>Sửa:</strong> theo dõi ACK và retry; không để một collection thành công che lỗi collection khác. Nguồn: <code>SyncEngine.kt:80,88,107,123,138,152–226</code>.</p>
+<h3 id="qa-24-p1-restore-thay-the-room-nhung-cloud-co-the-ua-du-lieu-cu-tro-lai">QA-24 · P1 · Restore thay thế Room nhưng cloud có thể đưa dữ liệu cũ trở lại</h3>
+<p><code>BackupService.restore()</code> xóa/thay dữ liệu local trong transaction, nhưng SyncEngine listener vẫn hoạt động; chưa thấy quy trình điều phối restore với trạng thái cloud. <strong>Tình huống cần test:</strong> khôi phục backup cũ khi đang đăng nhập; remote vẫn giữ item không có trong backup; reconnect/listener có thể đưa chúng về.</p>
+<p><strong>Sửa:</strong> chốt semantics restore khi có cloud, tạm dừng sync và dùng một cơ chế thay thế/version nhất quán. Không tuyên bố local transaction giải quyết được tính atomic giữa local và cloud. Nguồn: <code>Backup.kt:restore</code>, <code>SyncEngine.kt:attachListeners</code>.</p>
+<h3 id="qa-25-p2-oi-cai-at-lam-mat-lua-chon-khong-hoi-ang-nhap-lai">QA-25 · P2 · Đổi cài đặt làm mất lựa chọn “không hỏi đăng nhập lại”</h3>
+<p><code>applySettings()</code> tạo <code>AppSettings(fVal, sVal, lVal, tVal, dnd, th)</code>, bỏ trường <code>skipAuthPrompt</code>, nên trường đó trở về mặc định false và được lưu. <strong>Tình huống:</strong> khách chọn nhớ dùng ngoại tuyến → thay theme/thời lượng trong Cài đặt → welcome có thể xuất hiện lại.</p>
+<p><strong>Sửa:</strong> dùng <code>config.copy(...)</code> giữ các trường không sửa. Nguồn: <code>StatsSettingsUi.kt:675</code>, <code>Models.kt:AppSettings</code>, <code>SettingsStore.kt:save</code>. Máy thử đang đăng nhập nên chưa tái hiện nhánh khách này.</p>
+<h3 id="qa-26-p2-het-gio-nghi-co-the-gui-thong-bao-hoan-thanh-tap-trung">QA-26 · P2 · Hết giờ nghỉ có thể gửi thông báo “hoàn thành tập trung”</h3>
+<p><code>finish()</code> luôn chuyển phase về FOCUS, rồi <code>reconcile()</code>/<code>pause()</code>/<code>stop()</code> dùng phase của state sau chuyển để gọi <code>scheduler.completed(...)</code>. Với pha BREAK vừa kết thúc, cờ focus sẽ thành true. Scheduler chọn title/hint theo cờ đó.</p>
+<p><strong>Sửa:</strong> giữ phase trước chuyển trạng thái khi phát sự kiện hoàn thành. <strong>Test:</strong> nghỉ 1 phút hết tự nhiên và bấm pause/stop đúng biên hết giờ; phải hiện thông báo kết thúc nghỉ, không cộng Pomodoro. Đã thấy pha nghỉ quay về idle trên máy, nhưng không thu được thông báo đúng khoảnh khắc nên phần nội dung thông báo ở đây là kết luận từ code. Nguồn: <code>Repository.kt:202–214,228,249,264</code>, <code>Platform.kt:227–284</code>.</p>
+<h3 id="qa-27-p1-gia-han-vuot-180-phut-tao-du-lieu-ma-backup-khong-chap-nhan">QA-27 · P1 · Gia hạn vượt 180 phút tạo dữ liệu mà backup không chấp nhận</h3>
+<p><code>extendCurrentTimer()</code> cộng thêm thời lượng không có giới hạn trên; <code>BackupCodec.validate()</code> chỉ cho <code>plannedMs &lt;= 10.800.000</code> (180 phút). <strong>Tái hiện đề xuất:</strong> bắt đầu 180p → +5p → kết thúc sớm → export → import file vừa export. Validator sẽ từ chối plannedMs 185p dù chính app tạo ra.</p>
+<p><strong>Sửa:</strong> thống nhất giới hạn dữ liệu giữa timer và backup, hoặc giới hạn gia hạn rõ trên UI. Không cần chờ đủ 185 phút để test trường hợp này. Nguồn: <code>Repository.kt:160–190</code>, <code>Backup.kt:38</code>.</p>
+<h3 id="qa-28-p2-dialog-ang-nhapang-ky-khong-cuon-khi-ban-phimchu-lon">QA-28 · P2 · Dialog đăng nhập/đăng ký không cuộn khi bàn phím/chữ lớn</h3>
+<p>AuthDialog là Column cố định với nhiều thành phần, không có verticalScroll hay chiến lược thu gọn. Đăng ký thêm ô xác nhận và lỗi làm tăng chiều cao. <strong>Rủi ro:</strong> nút submit/để sau bị cắt ở ngang, màn thấp hoặc chữ lớn.</p>
+<p><strong>Sửa:</strong> vùng form cuộn, xử lý IME, hành động luôn truy cập được; kiểm thử 1,6×/2× và bàn phím mở. Không logout tài khoản hiện có để chạy nhánh này. Nguồn: <code>ui/AuthDialog.kt:Dialog/Column</code> và <code>WelcomeAuthDialog.kt</code>.</p>
+<h3 id="qa-29-p2-co-ang-nhap-mat-khau-nhung-khong-co-uong-quen-mat-khau">QA-29 · P2 · Có đăng nhập mật khẩu nhưng không có đường “Quên mật khẩu”</h3>
+<p>UI và AuthService hiện chỉ có login/register/signOut. <strong>Tác động:</strong> người dùng quên mật khẩu không có luồng tự phục hồi ngay trong sản phẩm. Đây là thiếu sót UX chức năng, không phải lỗi mật khẩu đã bị mất.</p>
+<p><strong>Sửa:</strong> thêm reset password và trạng thái thành công/lỗi phù hợp; chưa gửi email thử trong đợt audit. Nguồn: <code>AuthDialog.kt</code>, <code>AuthService.kt</code>.</p>
+<h3 id="qa-30-p2-luu-task-ong-editor-truoc-khi-biet-du-lieu-a-luu-thanh-cong">QA-30 · P2 · Lưu task đóng editor trước khi biết dữ liệu đã lưu thành công</h3>
+<p><code>AppShell.kt:375</code> gọi <code>model.saveTask(it)</code> rồi xóa <code>editTask</code> ngay. ViewModel chạy coroutine và chỉ phát một thông báo lỗi chung nếu thất bại. <strong>Rủi ro:</strong> lỗi lưu làm mất bản nháp trên màn hình; người dùng phải nhập lại, không có retry giữ dữ liệu.</p>
+<p><strong>Sửa:</strong> chỉ đóng khi repository xác nhận thành công; giữ draft và hiện lỗi theo trường/tình huống. Kịch bản disk-full/DAO failure chưa được inject thử. Không coi mọi lần lưu hiện tại đều lỗi.</p>
+<h3 id="qa-31-p2-chu-ky-tu-reset-qua-ngay3-gio-khac-voi-prd">QA-31 · P2 · Chu kỳ tự reset qua ngày/3 giờ khác với PRD</h3>
+<p><code>TimerRules.shouldResetCycle()</code> trả true nếu qua ngày hoặc cách phiên trước hơn 3 giờ; <code>Repository.startFocus()</code> áp dụng điều đó. PRD ghi bộ đếm không reset khi qua ngày. Đây là <strong>xung đột yêu cầu cần quyết định</strong>, vì nhánh hiện tại đã có nhiều thay đổi sau baseline, không tự khẳng định lựa chọn mới của sản phẩm là sai.</p>
+<p><strong>Test sau khi chốt:</strong> hoàn thành 3 phiên trước nửa đêm, chạy phiên thứ 4 sau nửa đêm; kết quả nghỉ dài phải đúng chính sách đã thống nhất. Nguồn: <code>Rules.kt:shouldResetCycle</code>, <code>Repository.kt:135–136</code>.</p>
+<h3 id="qa-32-p2-moc-hom-nay-trong-thong-ke-co-the-cu-sau-nua-em">QA-32 · P2 · Mốc “hôm nay” trong thống kê có thể cũ sau nửa đêm</h3>
+<p><code>StatsScreen</code> giữ <code>today</code> bằng <code>remember { LocalDate.now() }</code>; dateText/selectedCalendarMonth cũng khởi tạo rồi giữ lại. App không có nguồn ngày thay đổi được observe rõ ràng. <strong>Rủi ro:</strong> giữ màn qua nửa đêm hoặc resume mà composition còn sống, mục tiêu ngày/streak/biểu đồ vẫn theo hôm qua.</p>
+<p><strong>Sửa:</strong> đưa ngày/múi giờ hiện tại thành state từ clock, cập nhật ở biên ngày và resume; test với clock inject. Chưa đổi giờ hệ thống hay chờ qua nửa đêm trên máy để xác nhận. Nguồn: <code>StatsSettingsUi.kt:48–64</code>.</p>
+<h2 id="ma-tran-chuc-nang-a-lam-gi-va-con-thieu-gi">5. Ma trận chức năng — đã làm gì và còn thiếu gì</h2>
+<table>
+<thead>
+<tr>
+<th>Chức năng / nút</th>
+<th>Đã kiểm tra thực tế</th>
+<th>Kết luận / giới hạn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3 tab, Cài đặt, Back</td>
+<td>Đã chạm và chuyển nhiều lần</td>
+<td>Có lỗi QA-01; mở Cài đặt và Back dùng được ở luồng thường</td>
+</tr>
+<tr>
+<td>Thêm task chỉ có tên dài</td>
+<td>Nhập tên QA dài, Lưu, mở lại editor</td>
+<td>Lưu và hiển thị được; chưa test tiếng Việt có dấu bằng nhập liệu mới trong đợt này</td>
+</tr>
+<tr>
+<td>Tên rỗng</td>
+<td>Đọc validation và test cũ</td>
+<td>Chưa tự thao tác đủ trắng/tab/newline; không tuyên bố device PASS</td>
+</tr>
+<tr>
+<td>Sửa task, ghi chú, ưu tiên</td>
+<td>Mở editor và kiểm bố cục</td>
+<td>Chưa hoàn tất mọi tổ hợp lưu, ngày/ưu tiên/note</td>
+</tr>
+<tr>
+<td>Ngày dự định/hạn chót/date picker</td>
+<td>Quan sát chip, cuộn editor</td>
+<td>Chưa thử đầy đủ ngày quá hạn, picker, cuối tuần, không ngày</td>
+</tr>
+<tr>
+<td>Hôm nay/Sắp tới/Inbox/Tất cả/Đã xong, tìm kiếm</td>
+<td>Đọc bộ lọc, quan sát vị trí</td>
+<td>Chưa chạy đủ ma trận dữ liệu cho mọi filter/query; cần vòng regression riêng</td>
+</tr>
+<tr>
+<td>Hoàn thành / mở lại</td>
+<td>Tick task QA rồi mở lại</td>
+<td>Trạng thái đổi đúng ở chuỗi này; thống kê ghi nhận việc xong dù task được mở lại</td>
+</tr>
+<tr>
+<td>Xóa task cha / Hoàn tác</td>
+<td>Đọc code và tests</td>
+<td>Chưa chạy UI chuỗi này trong đợt hiện tại</td>
+</tr>
+<tr>
+<td>Thêm/tick/expand việc con</td>
+<td>Đã chạy</td>
+<td>Dùng được; phát hiện cơ chế lưu không đồng nhất</td>
+</tr>
+<tr>
+<td>Sửa/xóa việc con</td>
+<td>Mở dialog, nhập sửa, bấm Lưu rồi xóa</td>
+<td>Xóa hoạt động nhưng không undo; chưa chụp riêng hậu trạng thái tên sửa</td>
+</tr>
+<tr>
+<td>Chọn task / chuyển focus tự do</td>
+<td>Đã chọn task QA rồi đổi sang tự do</td>
+<td>Dùng được; đường từ task gây lỗi back stack</td>
+</tr>
+<tr>
+<td>Focus Tùy chỉnh</td>
+<td>Đổi 60 → 1 phút và lưu</td>
+<td>Dùng được; chưa bấm từng preset 15/25/45 và mọi giá trị biên</td>
+</tr>
+<tr>
+<td>Start/Pause/Resume/+1/+5/Stop</td>
+<td>Đã thao tác trên phiên QA</td>
+<td>Pause 00:48; +1 thành 01:48; +5, Resume và kết thúc sớm chạy được</td>
+</tr>
+<tr>
+<td>Hoàn thành focus</td>
+<td>Chờ đủ một phiên tự do 1 phút</td>
+<td>Có màn chúc mừng và báo đang đổ chuông; chưa nghe âm thanh thực tế</td>
+</tr>
+<tr>
+<td>Tắt chuông</td>
+<td>Bấm trên banner</td>
+<td>Banner mất; không khẳng định đo âm lượng/độ trễ</td>
+</tr>
+<tr>
+<td>Đề nghị nghỉ / tùy chỉnh nghỉ / start nghỉ</td>
+<td>Đặt nghỉ 1 phút, bắt đầu, chờ quay về idle</td>
+<td>Nghỉ không làm số Pomodoro tăng trong quan sát; chưa kiểm mọi nút pause/+1/skip của nghỉ</td>
+</tr>
+<tr>
+<td>Reset chu kỳ, 4 phiên → nghỉ dài</td>
+<td>Đọc logic/test</td>
+<td>Chưa chạy 4 phiên thật và nút reset; instrumented test bị chặn</td>
+</tr>
+<tr>
+<td>Home / quay lại</td>
+<td>Home trong phiên 1 phút rồi mở lại</td>
+<td>Countdown tiếp tục; không phải bằng chứng Doze/process death</td>
+</tr>
+<tr>
+<td>Process death</td>
+<td>Thử <code>am kill</code> sau Home</td>
+<td>PID vẫn còn 8428; <strong>không tạo được process death</strong>, không tuyên bố PASS</td>
+</tr>
+<tr>
+<td>Recent/force-stop/reboot/Doze</td>
+<td>Chưa chạy</td>
+<td>VERIFY_DEVICE; không suy ra từ Home/Back</td>
+</tr>
+<tr>
+<td>DND/quyền/chuông cuộc gọi/VoIP</td>
+<td>Quan sát UI quyền, đọc code</td>
+<td>Chưa cấp/thu hồi quyền, chưa gọi thật; VERIFY_DEVICE</td>
+</tr>
+<tr>
+<td>Thống kê ngày/tuần/tuần trước/lịch</td>
+<td>Đã chạm, cuộn, chọn ngày</td>
+<td>QA-07/08/09 tái hiện; chưa kiểm tháng/quý, DST, đổi múi giờ trên máy</td>
+</tr>
+<tr>
+<td>Cài đặt theme, số phút</td>
+<td>Đổi Tối/Sáng/Hệ thống, nhập 181</td>
+<td>QA-05/10 tái hiện; mục tiêu ngày và mọi preset chưa thử hết</td>
+</tr>
+<tr>
+<td>Backup export</td>
+<td>Chọn xuất, lưu bằng document picker</td>
+<td>Có thông báo thành công và tệp 1.995 bytes trên máy</td>
+</tr>
+<tr>
+<td>Restore/backup trước restore</td>
+<td>Đọc codec/service/tests</td>
+<td>Không thay thế dữ liệu hiện có; round-trip/invalid-file UI chưa chạy, tests bị chặn</td>
+</tr>
+<tr>
+<td>Login/register/logout/manual sync</td>
+<td>Quan sát tài khoản đã login, đọc code</td>
+<td>Không thao tác đổi tài khoản, không gửi email, chưa chạy hai máy/offline conflict</td>
+</tr>
+<tr>
+<td>Chữ lớn/dark/landscape/keyboard</td>
+<td>Đã chạy các màn chính và editor nhập liệu</td>
+<td>Có ảnh lỗi; chưa đủ 2×, màn nhỏ/API24/TalkBack</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Không thể nói “đã kiểm hết từng nút”.</strong> Bảng trên chỉ rõ các nút đã bấm và phần chưa có bằng chứng. Một thiết bị, một tài khoản đang đăng nhập và bộ test đang lỗi chưa đủ để chứng minh mọi tổ hợp đều ổn.</p>
+<h2 id="nhung-iem-ang-hoat-ong-va-nhan-xet-tham-my">6. Những điểm đang hoạt động và nhận xét thẩm mỹ</h2>
+<p>Tạo task không cần timer; hoàn thành/mở lại độc lập; tạo/tick việc con; liên kết task với focus; tạm dừng/gia hạn/kết thúc sớm; phiên tự do hoàn thành và đề nghị nghỉ đều đã có hành vi dùng được. Nút kết thúc sớm đã được tách hàng, dễ đọc ở cỡ chữ thường. Các thẻ có khoảng cách và bo góc tương đối nhất quán ở cấu hình ban đầu.</p>
+<p>Các điểm cần trau chuốt ngoài lỗi nghiêm trọng: dùng lẫn emoji và vector làm trọng lượng thị giác thiếu đồng đều; “Bấm giờ”/“Tập trung” cần thống nhất ý nghĩa; “0đ”, “Firebase”, “an toàn” lặp trong màn tài khoản mang tính kỹ thuật/quảng cáo hơn là giúp người dùng biết dữ liệu đã lên server chưa. Khi chỉ có một task, phần đầu trang và bộ lọc chiếm nhiều diện tích trước khi thấy nội dung chính. Đây là nhận xét thiết kế, không gắn nhãn crash hay mất dữ liệu.</p>
+<h2 id="thu-tu-sua-va-tieu-chi-kiem-lai">7. Thứ tự sửa và tiêu chí kiểm lại</h2>
+<ol>
+<li><strong>Bảo toàn dữ liệu:</strong> QA-18–24, QA-27. Test hai thiết bị với account riêng, offline/reconnect, xóa checklist, xung đột cập nhật, restore khi có cloud. Chưa cho phép khẳng định đồng bộ an toàn trước khi qua các ca này.</li>
+<li><strong>Khôi phục kiểm thử:</strong> QA-14. Build được test APK mới, chạy Repository/UI/platform và phân biệt skip với pass.</li>
+<li><strong>Sửa luồng phổ thông:</strong> QA-01, QA-07, QA-10. Tab luôn mở đúng; lịch đúng phút; cài đặt không hiển thị trạng thái giả.</li>
+<li><strong>UI/accessibility:</strong> QA-02–06, QA-15/16/28. Screenshot dọc/ngang ở 0,9×, 1,0×, 1,6× và 2×; kiểm chữ dài, IME và accessible names. Không chỉ assert nút “exists”.</li>
+<li><strong>UX tin cậy:</strong> QA-08/09/11/12/13/17/25/26/29/30; chốt lại chính sách chu kỳ và ngày ở QA-31/32.</li>
+</ol>
+<h2 id="bang-chung-hinh-anh-tieu-bieu">8. Bằng chứng hình ảnh tiêu biểu</h2>
+<h3 id="the-thong-ke-vo-o-chu-16">Thẻ thống kê vỡ ở chữ 1,6×</h3>
+<p><img src="32-stats-large-top.png" alt="Thẻ thống kê bị ép số thành cột" /></p>
+<h3 id="tom-tat-cong-viec-bi-vo-o-chu-16">Tóm tắt Công việc bị vỡ ở chữ 1,6×</h3>
+<p><img src="38-task-large.png" alt="Tiến độ task bị ép còn 29 px ngang" /></p>
+<h3 id="xoay-ngang-nhan-phu-vong-ong-ho">Xoay ngang: nhãn phủ vòng đồng hồ</h3>
+<p><img src="29-landscape-large.png" alt="Nhãn chu kỳ phủ viền đồng hồ" /></p>
+<h3 id="lich-ghi-sai-25-phut">Lịch ghi sai 25 phút</h3>
+<p><img src="20-wrong-minutes.png" alt="Lịch tự nhân số phiên với 25 phút" /></p>
+<h3 id="chon-sang-nhung-app-van-toi-khi-o-phut-la-181">Chọn Sáng nhưng app vẫn tối khi ô phút là 181</h3>
+<p><img src="43-theme-not-applied.png" alt="Cài đặt không áp dụng mà không báo lỗi" /></p>
+<p>Các ảnh gốc không được dựng lại hoặc chỉnh nội dung. Phần lớn có XML cùng tên để đối chiếu text/bounds. Tên một số tệp phản ánh dự định lúc chụp; mô tả trong báo cáo căn cứ nội dung thật, không căn cứ tên tệp.</p>
+<h2 id="trang-thai-ban-giao-sau-kiem-thu">9. Trạng thái bàn giao sau kiểm thử</h2>
+<ul>
+<li>Đã trả font_scale về <strong>0,9</strong>, user_rotation về <strong>0</strong> (dọc), accelerometer_rotation giữ <strong>0</strong> như ban đầu; theme <strong>Hệ thống</strong>, focus <strong>60 phút</strong>. Nghỉ ngắn/dài và mục tiêu ngày không chủ động thay đổi.</li>
+<li>Phiên kiểm thử đã kết thúc; ảnh <code>62-restored.png</code> là trạng thái sẵn sàng 60:00, không còn timer chạy.</li>
+<li>Giữ task QA và lịch sử phiên QA để đối chiếu, không xóa sự kiện thống kê của người dùng. Việc con QA đã xóa trong ca kiểm thử xóa. Dữ liệu QA có thể được app đồng bộ vì tài khoản đang đăng nhập; không chạy thử tài khoản khác.</li>
+<li>Tệp backup test đã lưu trong Download với tên <code>podomoro-2026-09-23.json</code>; chưa restore lên dữ liệu thật. Export không bao gồm cài đặt theo thiết kế hiện tại.</li>
+<li>Tệp mới của đợt audit nằm trong <code>output/qa-2026-09-23/</code>; không sửa docs backlog/handoff để biến kết quả cũ thành kết quả mới; không sửa mã nguồn ứng dụng.</li>
+<li>Trạng thái kiểm thử còn lại: <strong>VERIFY_DEVICE</strong> cho hệ điều hành cũ, Doze/chuông/DND/VoIP/reboot/force-stop; <strong>BLOCKED</strong> cho instrumented tests hiện tại; <strong>chưa kiểm chứng end-to-end</strong> cho đồng bộ nhiều máy và restore cùng cloud.</li>
+</ul>
+
+<footer>Báo cáo cục bộ. Không tải ảnh hay dữ liệu lên dịch vụ bên ngoài. Nhấp ảnh để xem ảnh gốc.</footer></main>
+<script>document.querySelectorAll('img').forEach(img=>{const a=document.createElement('a');a.href=img.getAttribute('src');a.target='_blank';a.rel='noopener';img.parentNode.insertBefore(a,img);a.appendChild(img);});</script>
+</body></html>

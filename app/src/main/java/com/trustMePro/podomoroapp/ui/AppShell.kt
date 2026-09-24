@@ -9,6 +9,7 @@ import com.google.gson.Gson
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.trustMePro.podomoroapp.AppViewModel
 import com.trustMePro.podomoroapp.R
@@ -43,23 +44,63 @@ private val destinations = listOf(
     val elapsed by model.elapsed.collectAsStateWithLifecycle()
     val busy by model.busy.collectAsStateWithLifecycle()
     val restore by model.pendingRestore.collectAsStateWithLifecycle()
+    val user by model.user.collectAsStateWithLifecycle()
+    val isRinging by AlarmPlayer.isRinging.collectAsStateWithLifecycle()
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "tasks"
     val snack = remember { SnackbarHostState() }
     val resources = androidx.compose.ui.platform.LocalResources.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     val taskSaver = remember { Saver<TaskItem?, String>(save = { Gson().toJson(it) }, restore = { Gson().fromJson(it, TaskItem::class.java) }) }
     var editTask by rememberSaveable(stateSaver = taskSaver) { mutableStateOf<TaskItem?>(null) }
     var selectedTask by rememberSaveable { mutableStateOf<String?>(null) }
+    var showWelcomeAuth by rememberSaveable { mutableStateOf(false) }
+    var showAuthDialog by rememberSaveable { mutableStateOf(false) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    fun focus(task: TaskItem) { selectedTask = task.id; nav.navigate("focus") { launchSingleTop = true } }
+    LaunchedEffect(user, config.skipAuthPrompt) {
+        if (user == null && !config.skipAuthPrompt) {
+            showWelcomeAuth = true
+        }
+    }
+
+    if (showWelcomeAuth) {
+        WelcomeAuthDialog(
+            onLoginClick = {
+                showWelcomeAuth = false
+                showAuthDialog = true
+            },
+            onContinueOffline = { dontAskAgain ->
+                showWelcomeAuth = false
+                if (dontAskAgain) {
+                    model.saveSettings(config.copy(skipAuthPrompt = true))
+                }
+            }
+        )
+    }
+
+    if (showAuthDialog) {
+        AuthDialog(
+            model = model,
+            onDismiss = { showAuthDialog = false }
+        )
+    }
+
+    fun focus(task: TaskItem) {
+        selectedTask = task.id
+        nav.navigate("focus") {
+            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     LaunchedEffect(targetRoute) {
         if (targetRoute != null) {
             nav.navigate(targetRoute) {
-                popUpTo(nav.graph.startDestinationId) { saveState = true }
+                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true
                 restoreState = true
             }
@@ -99,7 +140,7 @@ private val destinations = listOf(
                         onClick = {
                             if (route != item.route) {
                                 nav.navigate(item.route) {
-                                    popUpTo(nav.graph.startDestinationId) { saveState = true }
+                                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
@@ -225,7 +266,7 @@ private val destinations = listOf(
                                 onClick = {
                                     if (route != item.route) {
                                         nav.navigate(item.route) {
-                                            popUpTo(nav.graph.startDestinationId) { saveState = true }
+                                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                                             launchSingleTop = true
                                             restoreState = true
                                         }
@@ -277,6 +318,41 @@ private val destinations = listOf(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+
+            if (isRinging) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    tonalElevation = 6.dp,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("🔔", fontSize = 24.sp)
+                            Column {
+                                Text("Hết giờ đếm ngược!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
+                                Text("Đang đổ chuông báo thức...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onErrorContainer)
+                            }
+                        }
+                        Button(
+                            onClick = { AlarmPlayer.stopAlarm(context) },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("🔕 Tắt chuông", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onError)
+                        }
+                    }
+                }
+            }
+
             NavHost(navController = nav, startDestination = "tasks", modifier = Modifier.weight(1f)) {
                 composable("tasks") {
                     val todayStr = java.time.LocalDate.now().toString()
@@ -293,7 +369,7 @@ private val destinations = listOf(
                     )
                 }
                 composable("focus") { FocusScreen(data, config, access, elapsed, selectedTask, onChoose = { task -> selectedTask = task }, model = model) }
-                composable("stats") { StatsScreen(data) }
+                composable("stats") { StatsScreen(data, config) }
                 composable("settings") { SettingsScreen(config, access, model) }
             }
         }
@@ -304,7 +380,7 @@ private val destinations = listOf(
             task = task,
             checklists = data.checklists.filter { it.taskId == task.id },
             onDismiss = { editTask = null },
-            onSave = { model.saveTask(it); editTask = null },
+            onSave = { taskToSave -> model.saveTask(taskToSave) { editTask = null } },
             onDelete = if (data.tasks.any { it.id == task.id }) ({ model.delete(task); editTask = null }) else null,
             onSaveChecklist = model::saveChecklist,
             onDoneChecklist = model::doneChecklist,

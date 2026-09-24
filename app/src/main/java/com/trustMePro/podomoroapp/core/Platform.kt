@@ -44,6 +44,10 @@ class AndroidScheduler(private val context: Context) : EndScheduler {
         Intent(context, TimerReceiver::class.java).setAction("FOCUS_END").putExtra("generation", generation),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
+    private fun warnPending(generation: String = "") = PendingIntent.getBroadcast(context, 44,
+        Intent(context, TimerReceiver::class.java).setAction("FOCUS_WARNING_3MIN").putExtra("generation", generation),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
     private fun actionPending(action: String, reqCode: Int): PendingIntent {
         val intent = Intent(context, TimerReceiver::class.java).setAction(action)
         return PendingIntent.getBroadcast(context, reqCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -56,6 +60,7 @@ class AndroidScheduler(private val context: Context) : EndScheduler {
     override fun schedule(state: TimerState, title: String?) {
         if (state.status != "RUNNING") {
             alarms.cancel(pending())
+            alarms.cancel(warnPending())
             if (state.status == "PAUSED") {
                 showLiveNotification(state, title)
             } else {
@@ -70,6 +75,20 @@ class AndroidScheduler(private val context: Context) : EndScheduler {
         } catch (_: SecurityException) {
             alarms.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, at, pending(state.generation))
         }
+
+        // Schedule 3-minute warning if in FOCUS phase and remaining > 3 minutes (180,000 ms)
+        if (state.phase == "FOCUS" && state.remainingMs > 180_000L) {
+            val warnAt = state.segmentElapsed + (state.remainingMs - 180_000L)
+            try {
+                if (exactAvailable()) alarms.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, warnAt, warnPending(state.generation))
+                else alarms.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, warnAt, warnPending(state.generation))
+            } catch (_: SecurityException) {
+                alarms.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, warnAt, warnPending(state.generation))
+            }
+        } else {
+            alarms.cancel(warnPending())
+        }
+
         showLiveNotification(state, title)
     }
 
@@ -200,62 +219,39 @@ class AndroidScheduler(private val context: Context) : EndScheduler {
 
     override fun cancel() {
         alarms.cancel(pending())
+        alarms.cancel(warnPending())
         cancelLiveNotification()
+        AlarmPlayer.stopAlarm(context)
     }
 
     override fun completed(focus: Boolean) {
         cancelLiveNotification()
+        alarms.cancel(warnPending())
+
+        // 1. Play continuous loud alarm and vibration
+        AlarmPlayer.startAlarm(context, focus)
+
+        // 2. Setup notification with action to dismiss alarm
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
         val manager = context.getSystemService(NotificationManager::class.java)
-        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-        val vibrationPattern = longArrayOf(0, 500, 250, 500)
+
+        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
         if (Build.VERSION.SDK_INT >= 26) {
-            runCatching { manager.deleteNotificationChannel("timer_end") }
             val audioAttr = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                .setUsage(AudioAttributes.USAGE_ALARM)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build()
-            val channel = NotificationChannel("timer_end_v2", context.getString(R.string.timer_channel), NotificationManager.IMPORTANCE_HIGH).apply {
-                description = context.getString(R.string.timer_channel_desc)
+            val channel = NotificationChannel("timer_alarm_v1", "Báo thức FocusDo", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Chuông báo thức khi hoàn thành phiên"
                 enableVibration(true)
-                this.vibrationPattern = vibrationPattern
                 setSound(soundUri, audioAttr)
                 setBypassDnd(true)
             }
             manager.createNotificationChannel(channel)
         }
 
-        // Direct hardware vibration
-        try {
-            val vibrator = if (Build.VERSION.SDK_INT >= 31) {
-                val vm = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-                vm?.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            }
-            if (Build.VERSION.SDK_INT >= 26) {
-                vibrator?.vibrate(VibrationEffect.createWaveform(vibrationPattern, -1))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator?.vibrate(vibrationPattern, -1)
-            }
-        } catch (_: Exception) { /* Hardware without vibrator */ }
-
-        // Direct sound playback with USAGE_ALARM to penetrate DND
-        try {
-            val ringtone = RingtoneManager.getRingtone(context, soundUri)
-            if (Build.VERSION.SDK_INT >= 21) {
-                ringtone?.audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            }
-            ringtone?.play()
-        } catch (_: Exception) { /* Sound playback unavailable */ }
-
-        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
         val open = PendingIntent.getActivity(
             context,
             2,
@@ -267,17 +263,18 @@ class AndroidScheduler(private val context: Context) : EndScheduler {
         )
         val title = if (focus) context.getString(R.string.focus_finished) else context.getString(R.string.break_finished_title)
         val hint = if (focus) context.getString(R.string.finished_hint) else context.getString(R.string.break_finished_hint)
-        val notification = NotificationCompat.Builder(context, "timer_end_v2")
+        val notification = NotificationCompat.Builder(context, "timer_alarm_v1")
             .setSmallIcon(R.drawable.ic_timer_notification)
-            .setContentTitle(title)
+            .setContentTitle("🔔 $title")
             .setContentText(hint)
             .setContentIntent(open)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setSound(soundUri)
-            .setVibrate(vibrationPattern)
-            .setAutoCancel(true).build()
-        try { manager.notify(timerNotifId, notification) } catch (_: SecurityException) { /* Permission may be revoked between checks. */ }
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .addAction(0, "🔕 Tắt chuông", actionPending("TIMER_DISMISS_ALARM", 106))
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .build()
+        try { manager.notify(43, notification) } catch (_: SecurityException) { /* Permission may be revoked between checks. */ }
     }
 }
 
@@ -348,12 +345,45 @@ class TimerReceiver : BroadcastReceiver() {
                     "TIMER_RESUME" -> app.container.repository.resume()
                     "TIMER_EXTEND" -> app.container.repository.extendCurrentTimer(300_000L)
                     "TIMER_EXTEND_1" -> app.container.repository.extendCurrentTimer(60_000L)
-                    "TIMER_STOP" -> app.container.repository.stop()
+                    "TIMER_STOP" -> {
+                        AlarmPlayer.stopAlarm(context)
+                        app.container.repository.stop()
+                    }
+                    "TIMER_DISMISS_ALARM" -> {
+                        AlarmPlayer.stopAlarm(context)
+                    }
+                    "FOCUS_WARNING_3MIN" -> {
+                        val timer = app.container.database.dao().timer()
+                        if (timer != null && timer.status == "RUNNING" && timer.phase == "FOCUS") {
+                            AlarmPlayer.playWarningTing(context)
+                            showWarningNotification(context)
+                        }
+                    }
                     else -> app.container.repository.reconcile(intent.getStringExtra("generation"), reschedule = intent.action != "FOCUS_END")
                 }
             } finally {
                 pending.finish()
             }
         }
+    }
+
+    private fun showWarningNotification(context: Context) {
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        if (Build.VERSION.SDK_INT >= 26) {
+            val channel = NotificationChannel("timer_warning_3min", "Cảnh báo thời gian", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Thông báo cảnh báo trước 3 phút"
+                enableVibration(true)
+            }
+            manager.createNotificationChannel(channel)
+        }
+        val notif = NotificationCompat.Builder(context, "timer_warning_3min")
+            .setSmallIcon(R.drawable.ic_timer_notification)
+            .setContentTitle("⏱ Còn 3 phút nữa!")
+            .setContentText("Phiên tập trung sắp kết thúc, chuẩn bị hoàn thành công việc nhé.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        try { manager.notify(45, notif) } catch (_: Exception) { }
     }
 }

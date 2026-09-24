@@ -13,3 +13,10 @@ local.properties
 *.jks
 *.keystore
 keystore.properties
+*.apk
+*.zip
+*.pdf
+/output/pdf/
+output/pdf/
+/tmp/
+tmp/

@@ -4,7 +4,7 @@
     <string name="tagline">Tập trung sâu • Hoàn thành việc.</string>
     <string name="tasks">Công việc</string><string name="focus">Bấm giờ</string><string name="goals">Mục tiêu</string><string name="stats">Thống kê</string><string name="settings">Cài đặt</string>
     <string name="task_icon">✓</string><string name="focus_icon">◷</string><string name="goal_icon">◎</string><string name="stats_icon">▥</string>
-    <string name="inbox">Chờ lên lịch</string><string name="today">Hôm nay</string><string name="upcoming">Sắp tới</string><string name="all">Tất cả</string><string name="done">Đã hoàn thành</string>
+    <string name="inbox">Không đặt ngày</string><string name="today">Hôm nay</string><string name="upcoming">Sắp tới</string><string name="all">Tất cả</string><string name="done">Đã hoàn thành</string>
     <string name="todo">Chưa làm</string><string name="task_in_progress">Đang làm</string><string name="overdue">Quá hạn</string>
     <string name="task_pomodoros">Đã tập trung: %1$d Pomodoro</string>
     <string name="overdue_count">Quá hạn: %1$d công việc</string>
@@ -17,7 +17,7 @@
     <string name="no_goal">Không thuộc mục tiêu</string><string name="save">Lưu</string><string name="cancel">Hủy</string><string name="delete">Xóa</string><string name="delete_task">Xóa công việc</string><string name="undo">Hoàn tác</string><string name="close">Đóng</string>
     <string name="edit">Sửa</string><string name="start_task">Tập trung vào việc này</string><string name="mark_done">Đánh dấu hoàn thành</string><string name="reopen">Mở lại</string>
     <string name="empty_tasks">Để đầu óc nhẹ hơn.</string><string name="empty_tasks_hint">Ghi lại việc đầu tiên bạn muốn làm. Chỉ cần một dòng.</string><string name="no_results">Chưa có việc trong danh sách này.</string>
-    <string name="task_deleted">Đã xóa công việc</string><string name="goal_deleted">Đã xóa mục tiêu, giữ lại công việc</string><string name="invalid_form">Nhập tên, ngày hợp lệ và số dương nếu có.</string>
+    <string name="task_deleted">Đã xóa công việc</string><string name="checklist_deleted">Đã xóa việc con</string><string name="goal_deleted">Đã xóa mục tiêu, giữ lại công việc</string><string name="invalid_form">Nhập tên, ngày hợp lệ và số dương nếu có.</string>
     <string name="planned_value">Dự định: %1$s</string><string name="due_value">Hạn: %1$s</string><string name="estimate_value">Dự kiến %1$d Pomodoro</string>
     <string name="subtasks">Danh sách việc con</string><string name="add_subtask">Thêm việc con</string>
     <string name="subtask_title">Tên việc con…</string><string name="subtask_progress">%1$d / %2$d việc con</string>
@@ -37,14 +37,14 @@
     <string name="permission_title">Để tập trung liền mạch</string><string name="notification_permission">Cho phép thông báo hết giờ</string><string name="alarm_permission">Cho phép báo giờ chính xác</string><string name="dnd_permission">Cho phép chế độ Không làm phiền</string>
     <string name="alarm_hint">Chưa có quyền báo giờ chính xác: tín hiệu khi chạy nền có thể đến trễ.</string><string name="notification_hint">Thông báo hết giờ đang tắt.</string>
     <string name="dnd_active">Không làm phiền đang bật · cho phép cuộc gọi</string><string name="dnd_ready">Đã có quyền Không làm phiền</string><string name="dnd_missing">Chưa có quyền Không làm phiền</string><string name="dnd_old">Android này cần tự cấu hình Không làm phiền và ngoại lệ cuộc gọi trong Cài đặt hệ thống.</string>
-    <string name="dnd_details">Cuộc gọi còn phụ thuộc chế độ im lặng và quy tắc hệ thống khác. Cuộc gọi Zalo/Messenger cần kiểm tra riêng. Nếu buộc dừng ứng dụng, hãy kiểm tra và tắt quy tắc FocusDo trong Cài đặt hệ thống.</string>
+    <string name="dnd_details">Khả năng chặn hoặc nhận thông báo còn phụ thuộc vào cài đặt Không làm phiền của từng dòng máy. Nếu buộc dừng ứng dụng, hãy kiểm tra quy tắc FocusDo trong Cài đặt hệ thống.</string>
     <string name="dnd_disabled">Không làm phiền tự động đang tắt</string><string name="open_dnd">Mở cài đặt Không làm phiền</string>
     <string name="timer_channel">Kết thúc Pomodoro</string><string name="focus_finished">Đã hoàn thành phiên tập trung</string><string name="break_finished">Đã hết giờ nghỉ</string><string name="finished_hint">Mở FocusDo để chọn bước tiếp theo.</string><string name="dnd_rule">FocusDo — Bấm giờ</string>
-    <string name="day">Ngày</string><string name="week">Tuần</string><string name="month">Tháng</string><string name="this_week">Tuần này</string><string name="this_month">Tháng này</string><string name="previous">Trước</string><string name="next">Sau</string><string name="period_range">%1$s → %2$s</string>
+    <string name="day">Ngày</string><string name="week">Tuần</string><string name="month">Tháng</string><string name="this_week">Tuần này</string><string name="this_month">Tháng này</string><string name="previous">Trước</string><string name="next">Sau</string><string name="previous_period">Kỳ trước</string><string name="next_period">Kỳ sau</string><string name="period_range">%1$s → %2$s</string>
     <string name="pomodoros">Pomodoro</string><string name="focus_time">Phút tập trung</string><string name="completed_tasks">Việc xong trong kỳ</string><string name="aborted">Phiên dừng / gián đoạn</string><string name="daily_chart">Thời gian theo ngày</string><string name="history">Lịch sử tập trung</string><string name="empty_history">Chưa có phiên trong khoảng thời gian này.</string>
     <string name="current_tasks">Trạng thái công việc hiện tại</string><string name="task_summary">%1$d chưa làm · %2$d đang làm · %3$d đã xong</string>
     <string name="minutes_value">%1$d phút</string><string name="session_completed">Hoàn thành</string><string name="session_aborted">Kết thúc sớm</string><string name="session_interrupted">Bị gián đoạn</string><string name="session_running">Đang thực hiện</string>
-    <string name="today_summary">%1$d Pomodoro · %2$d phút hôm nay</string><string name="daily_progress">%1$d / %2$d Pomodoro hôm nay</string>
+    <string name="today_summary">%1$d Pomodoro · %2$d phút hôm nay</string><string name="day_summary">%1$d Pomodoro · %2$d phút trong ngày</string><string name="period_summary">%1$d Pomodoro · %2$d phút trong kỳ</string><string name="daily_progress">%1$d / %2$d Pomodoro hôm nay</string>
     <string name="timing_settings">Thời gian Pomodoro</string><string name="focus_minutes">Tập trung (phút)</string><string name="short_minutes">Nghỉ ngắn (phút)</string><string name="long_minutes">Nghỉ dài (phút)</string><string name="daily_target">Mục tiêu Pomodoro mỗi ngày</string><string name="use_dnd">Tự bật Không làm phiền khi tập trung</string>
     <string name="settings_hint">Thời lượng từ 1 đến 180 phút. Thay đổi tự động áp dụng.</string><string name="saved">Đã lưu cài đặt</string><string name="backup">Dữ liệu của bạn</string><string name="backup_hint">Sao lưu công việc và lịch sử tập trung vào tệp JSON. Cài đặt cá nhân giữ nguyên khi khôi phục.</string>
     <string name="export_backup">Xuất bản sao lưu</string><string name="import_backup">Khôi phục từ tệp</string><string name="export_previous">Xuất dữ liệu trước lần khôi phục gần nhất</string><string name="backup_saved">Đã xuất bản sao lưu</string><string name="restore_done">Đã khôi phục dữ liệu</string>
@@ -89,7 +89,7 @@
     <string name="custom_break_title">Thời gian nghỉ</string>
     <string name="minutes_input_label">Số phút (1–180)</string>
     <string name="timer_channel_desc">Thông báo kết thúc phiên tập trung và nghỉ ngơi</string>
-    <string name="dnd_ott_note">Chế độ DND tắt chuông thông báo tin nhắn nhưng cho phép cuộc gọi SIM và các ứng dụng Zalo, Messenger. Hãy đảm bảo bật "Cho phép làm gián đoạn" trong cài đặt thông báo của Zalo/Messenger nếu cần.</string>
+    <string name="dnd_ott_note">Quy tắc DND của ứng dụng ưu tiên cuộc gọi hệ thống. Khả năng nhận cuộc gọi từ ứng dụng bên thứ ba (như Zalo, Messenger) phụ thuộc vào chính sách Không làm phiền của thiết bị.</string>
     <string name="quick_suggestions">Gợi ý nhanh</string>
     <string name="back">Quay lại</string>
     <string name="theme_title">Giao diện ứng dụng</string>
@@ -97,6 +97,11 @@
     <string name="theme_light">Sáng</string>
     <string name="theme_dark">Tối</string>
     <string name="edit_subtask_title">Sửa tên việc con</string>
+    <string name="subtasks_auto_save_hint">Việc con được lưu và cập nhật ngay. Bấm ✕ để xóa (có Hoàn tác).</string>
+    <string name="dnd_missing_permission_warn">Đã bật Không làm phiền nhưng ứng dụng chưa có quyền truy cập</string>
+    <string name="grant_permission">Cấp quyền</string>
+    <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="password_reset_sent">Đã gửi email khôi phục mật khẩu. Vui lòng kiểm tra hộp thư.</string>
     <string name="due_today">Hôm nay</string>
     <string name="due_tomorrow">Ngày mai</string>
     <string name="due_overdue">Quá hạn (%1$s)</string>
@@ -108,7 +113,7 @@
     <string name="break_short">Nghỉ ngắn</string>
     <string name="break_long">Nghỉ dài</string>
     <string name="break_phase_hint">Thư giãn mắt, thả lỏng vai và uống ngụm nước nhé ☕</string>
-    <string name="break_dnd_off_hint">🛡️ Đã tắt Không làm phiền trong giờ nghỉ để bạn nhận thông báo</string>
+    <string name="break_dnd_off_hint">🛡️ FocusDo đã tắt quy tắc Không làm phiền trong giờ nghỉ.</string>
     <string name="break_finished_title">Đã hết giờ nghỉ ngơi! 🎉</string>
     <string name="break_finished_hint">Sẵn sàng cho phiên tập trung tiếp theo chưa? Mở FocusDo ngay 🍅</string>
     <string name="extend_1_minute">+1 phút</string>
@@ -116,4 +121,15 @@
     <string name="notification_action_skip_break">Bỏ qua</string>
     <string name="notification_remaining_time">Thời gian còn lại</string>
     <string name="notification_paused_badge">ĐÃ TẠM DỪNG</string>
+    <string name="cycle_dialog_title">Chu kỳ Pomodoro là gì?</string>
+    <string name="cycle_dialog_desc">Phương pháp Pomodoro chia thời gian làm việc thành từng vòng gồm 4 phiên (mỗi phiên 25 phút):\n\n• Sau phiên 1, 2, 3: Nghỉ ngắn 5 phút để thư giãn mắt và não.\n• Sau phiên 4: Nghỉ dài 15–30 phút để phục hồi sâu năng lượng.\n\n💡 Vòng 4 phiên này đo sức bền sinh học của cơ thể, không phụ thuộc vào việc bạn làm một hay nhiều công việc khác nhau.</string>
+    <string name="cycle_dialog_reset_btn">Bắt đầu lại vòng mới (Phiên 1)</string>
+    <string name="cycle_dialog_close">Đã hiểu</string>
+    <string name="break_cycle_short">Nghỉ ngắn sau phiên %1$d/4 ☕</string>
+    <string name="break_cycle_long">Nghỉ dài (Đã hoàn thành vòng 4/4! 🎉)</string>
+    <string name="break_cycle_idle">Giờ nghỉ ngơi ☕</string>
+    <string name="daily_target_card_title">Mục tiêu Pomodoro hôm nay</string>
+    <string name="daily_target_status">%1$d / %2$d 🍅 (%3$d%%)</string>
+    <string name="daily_target_reached">🎉 Xuất sắc! Bạn đã hoàn thành mục tiêu hôm nay!</string>
+    <string name="daily_target_keep_going">Còn %1$d Pomodoro nữa để chạm đích mục tiêu ngày.</string>
 </resources>

@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,6 +24,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -43,8 +46,18 @@ import java.util.Locale
     var stop by rememberSaveable { mutableStateOf(false) }
     var showCustomFocusDialog by rememberSaveable { mutableStateOf(false) }
     var showCustomBreakDialog by rememberSaveable { mutableStateOf(false) }
+    var showCycleDialog by rememberSaveable { mutableStateOf(false) }
     var idleMode by rememberSaveable { mutableStateOf("FOCUS") }
+    val context = LocalContext.current
+    fun openDndSettings() {
+        try {
+            context.startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+        } catch (_: Exception) {
+            Toast.makeText(context, R.string.settings_unavailable, Toast.LENGTH_LONG).show()
+        }
+    }
     val state = data.timer
+    val showDndMissing = config.useDnd && !access.dndPermission && access.dndSupported
     var selectedBreakMinutes by rememberSaveable(state.breakMinutes) { mutableIntStateOf(state.breakMinutes) }
     val live = state.status in listOf("RUNNING", "PAUSED")
     val isPaused = state.status == "PAUSED"
@@ -91,7 +104,7 @@ import java.util.Locale
             ) {
                 if (live || isBreakActive || isPaused) {
                     PhasePillBadge(containerColor, isBreakActive, !live && idleMode == "BREAK", isPaused, live)
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(8.dp))
                 }
                 ZenDialTimer(
                     live = live,
@@ -100,9 +113,14 @@ import java.util.Locale
                     primaryColor = primaryColor,
                     seconds = seconds,
                     isPaused = isPaused,
+                    maxDialSize = 180.dp
+                )
+                Spacer(Modifier.height(6.dp))
+                CycleInfoBadge(
                     completedInCycle = state.completedInCycle,
                     isBreak = isBreakMode,
-                    maxDialSize = 190.dp
+                    live = live,
+                    onCycleClick = { showCycleDialog = true }
                 )
             }
 
@@ -198,7 +216,9 @@ import java.util.Locale
                 } else {
                     DndWarningBannerContent(
                         showDndHint = config.useDnd && access.dndActive,
-                        showAlarmWarning = !access.exact
+                        showAlarmWarning = !access.exact,
+                        showDndMissingPermission = showDndMissing,
+                        onGrantDndPermission = if (showDndMissing) ::openDndSettings else null
                     )
                 }
             }
@@ -236,9 +256,13 @@ import java.util.Locale
                     primaryColor = primaryColor,
                     seconds = seconds,
                     isPaused = isPaused,
+                    maxDialSize = 220.dp
+                )
+                CycleInfoBadge(
                     completedInCycle = state.completedInCycle,
                     isBreak = isBreakMode,
-                    maxDialSize = 220.dp
+                    live = live,
+                    onCycleClick = { showCycleDialog = true }
                 )
                 if (!live) {
                     if (idleMode == "BREAK") {
@@ -278,6 +302,7 @@ import java.util.Locale
                     live = live,
                     isRunning = state.status == "RUNNING",
                     isBreak = isBreakActive || (!live && idleMode == "BREAK"),
+                    plannedMs = state.plannedMs,
                     onPauseResume = if (state.status == "RUNNING") model::pause else model::resume,
                     onExtend1m = { model.extendTimer(60_000L) },
                     onExtend5m = { model.extendTimer(300_000L) },
@@ -311,7 +336,9 @@ import java.util.Locale
             } else {
                 DndWarningBannerContent(
                     showDndHint = config.useDnd && access.dndActive,
-                    showAlarmWarning = !access.exact
+                    showAlarmWarning = !access.exact,
+                    showDndMissingPermission = showDndMissing,
+                    onGrantDndPermission = if (showDndMissing) ::openDndSettings else null
                 )
             }
             Spacer(Modifier.height(16.dp))
@@ -412,6 +439,14 @@ import java.util.Locale
             title = stringResource(R.string.custom_break_title),
             onDismiss = { showCustomBreakDialog = false },
             onConfirm = { mins -> selectedBreakMinutes = mins }
+        )
+    }
+
+    if (showCycleDialog) {
+        PomodoroCycleDialog(
+            completedInCycle = state.completedInCycle,
+            onDismiss = { showCycleDialog = false },
+            onResetCycle = { model.resetCycle() }
         )
     }
 }
@@ -535,8 +570,6 @@ private fun ZenDialTimer(
     primaryColor: androidx.compose.ui.graphics.Color,
     seconds: Long,
     isPaused: Boolean,
-    completedInCycle: Int,
-    isBreak: Boolean,
     maxDialSize: androidx.compose.ui.unit.Dp
 ) {
     Box(
@@ -555,46 +588,193 @@ private fun ZenDialTimer(
             trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
         )
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = String.format(Locale.ROOT, "%02d:%02d", seconds / 60, seconds % 60),
-                style = if (maxDialSize < 220.dp) MaterialTheme.typography.displayMedium else MaterialTheme.typography.displayLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+        Text(
+            text = String.format(Locale.ROOT, "%02d:%02d", seconds / 60, seconds % 60),
+            style = if (maxDialSize < 220.dp) MaterialTheme.typography.displayMedium else MaterialTheme.typography.displayLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
 
+@Composable
+private fun CycleInfoBadge(
+    completedInCycle: Int,
+    isBreak: Boolean,
+    live: Boolean,
+    onCycleClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val currentInCycle = completedInCycle % 4
+    val cycleLabel = when {
+        isBreak -> {
+            when {
+                completedInCycle == 0 -> stringResource(R.string.break_cycle_idle)
+                currentInCycle == 0 -> stringResource(R.string.break_cycle_long)
+                else -> stringResource(R.string.break_cycle_short, currentInCycle)
+            }
+        }
+        else -> stringResource(R.string.cycle_count, currentInCycle + 1)
+    }
+
+    Surface(
+        onClick = onCycleClick,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             // 4 Cycle Dots
-            Spacer(Modifier.height(8.dp))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val currentInCycle = completedInCycle % 4
                 for (i in 0..3) {
                     val dotFilled = i < currentInCycle
                     val dotCurrent = i == currentInCycle && live && !isBreak
                     Box(
                         modifier = Modifier
-                            .size(if (maxDialSize < 220.dp) 8.dp else 10.dp)
+                            .size(7.dp)
                             .background(
                                 color = when {
                                     dotFilled -> MaterialTheme.colorScheme.primary
                                     dotCurrent -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                                    else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                    else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
                                 },
                                 shape = CircleShape
                             )
                     )
                 }
             }
+
             Text(
-                stringResource(R.string.cycle_count, (completedInCycle % 4) + 1),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 3.dp)
+                text = cycleLabel,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Icon(
+                painter = painterResource(R.drawable.ic_info),
+                contentDescription = stringResource(R.string.cycle_dialog_title),
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.primary
             )
         }
     }
+}
+
+@Composable
+private fun PomodoroCycleDialog(
+    completedInCycle: Int,
+    onDismiss: () -> Unit,
+    onResetCycle: () -> Unit
+) {
+    val currentInCycle = completedInCycle % 4
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text("🍅", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    stringResource(R.string.cycle_dialog_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Visual representation of 4 steps in a cycle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            RoundedCornerShape(14.dp)
+                        )
+                        .padding(10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    for (step in 1..4) {
+                        val isDone = step <= currentInCycle
+                        val isCurrent = step == currentInCycle + 1
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = when {
+                                    isDone -> MaterialTheme.colorScheme.primary
+                                    isCurrent -> MaterialTheme.colorScheme.primaryContainer
+                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = if (isDone) "✓" else "$step",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = when {
+                                            isDone -> MaterialTheme.colorScheme.onPrimary
+                                            isCurrent -> MaterialTheme.colorScheme.onPrimaryContainer
+                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    )
+                                }
+                            }
+                            Text(
+                                text = if (step == 4) "Nghỉ dài" else "Nghỉ 5p",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                Text(
+                    text = stringResource(R.string.cycle_dialog_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 18.sp
+                )
+
+                OutlinedButton(
+                    onClick = {
+                        onResetCycle()
+                        onDismiss()
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "🔄 " + stringResource(R.string.cycle_dialog_reset_btn),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(stringResource(R.string.cycle_dialog_close))
+            }
+        }
+    )
 }
 
 @Composable
@@ -821,6 +1001,7 @@ private fun FocusControlButtonsContent(
     live: Boolean,
     isRunning: Boolean,
     isBreak: Boolean,
+    plannedMs: Long = 0L,
     onPauseResume: () -> Unit,
     onExtend1m: () -> Unit,
     onExtend5m: () -> Unit,
@@ -861,6 +1042,7 @@ private fun FocusControlButtonsContent(
                 ) {
                     FilledTonalButton(
                         onClick = onExtend1m,
+                        enabled = plannedMs + 60_000L <= 10_800_000L,
                         modifier = Modifier.weight(1f).height(46.dp),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
@@ -899,6 +1081,7 @@ private fun FocusControlButtonsContent(
                 ) {
                     FilledTonalButton(
                         onClick = onExtend1m,
+                        enabled = plannedMs + 60_000L <= 10_800_000L,
                         modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
@@ -915,6 +1098,7 @@ private fun FocusControlButtonsContent(
 
                     FilledTonalButton(
                         onClick = onExtend5m,
+                        enabled = plannedMs + 300_000L <= 10_800_000L,
                         modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
@@ -1054,9 +1238,45 @@ private fun BreakCardContent(
 @Composable
 private fun DndWarningBannerContent(
     showDndHint: Boolean,
-    showAlarmWarning: Boolean
+    showAlarmWarning: Boolean,
+    showDndMissingPermission: Boolean = false,
+    onGrantDndPermission: (() -> Unit)? = null
 ) {
-    if (showDndHint || showAlarmWarning) {
+    if (showDndMissingPermission) {
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("⚠️", style = MaterialTheme.typography.bodyMedium)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.dnd_missing_permission_warn),
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                if (onGrantDndPermission != null) {
+                    FilledTonalButton(
+                        onClick = onGrantDndPermission,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(stringResource(R.string.grant_permission), style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+    } else if (showDndHint || showAlarmWarning) {
         Surface(
             shape = RoundedCornerShape(14.dp),
             color = if (showAlarmWarning) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),

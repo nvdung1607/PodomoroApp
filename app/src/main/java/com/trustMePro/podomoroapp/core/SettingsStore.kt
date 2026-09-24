@@ -19,6 +19,8 @@ class SettingsStore(context: Context) : SettingsProvider {
     private val target = intPreferencesKey("target")
     private val dnd = booleanPreferencesKey("dnd")
     private val themeKey = stringPreferencesKey("theme")
+    private val skipAuthKey = booleanPreferencesKey("skip_auth_prompt")
+    private val lastUidKey = stringPreferencesKey("last_synced_uid")
     override val settings = store.data.map {
         AppSettings(
             it[focus] ?: 25,
@@ -26,7 +28,9 @@ class SettingsStore(context: Context) : SettingsProvider {
             it[long] ?: 15,
             it[target] ?: 8,
             it[dnd] ?: true,
-            it[themeKey] ?: "SYSTEM"
+            it[themeKey] ?: "SYSTEM",
+            it[skipAuthKey] ?: false,
+            it[lastUidKey]
         )
     }
     override suspend fun save(value: AppSettings) {
@@ -39,6 +43,12 @@ class SettingsStore(context: Context) : SettingsProvider {
             it[target] = value.dailyTarget
             it[dnd] = value.useDnd
             it[themeKey] = value.theme
+            it[skipAuthKey] = value.skipAuthPrompt
+            if (value.lastSyncedUid != null) {
+                it[lastUidKey] = value.lastSyncedUid
+            } else {
+                it.remove(lastUidKey)
+            }
         }
     }
 }

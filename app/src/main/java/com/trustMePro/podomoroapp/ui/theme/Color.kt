@@ -2,8 +2,8 @@ package com.trustMePro.podomoroapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Warm & Zen Palette - Primary (Coral Orange)
-val CoralPrimary = Color(0xFFFF5722)
+// Warm & Zen Palette - Primary (Coral Orange - WCAG 4.5:1 compliant)
+val CoralPrimary = Color(0xFFC83E12)
 val CoralPrimaryDark = Color(0xFFFF8A65)
 val CoralContainerLight = Color(0xFFFFEDE6)
 val CoralContainerDark = Color(0xFF4A1808)
@@ -19,7 +19,7 @@ val OnGreenContainerLight = Color(0xFF0F3E12)
 val OnGreenContainerDark = Color(0xFFC8E6C9)
 
 // Tertiary (Warm Gold - Streaks & Focus Badges)
-val AmberTertiary = Color(0xFFF57C00)
+val AmberTertiary = Color(0xFFB45309)
 val AmberTertiaryDark = Color(0xFFFFB74D)
 val AmberContainerLight = Color(0xFFFFF3E0)
 val AmberContainerDark = Color(0xFF472400)

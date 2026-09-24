@@ -65,20 +65,26 @@ class BackupService(private val context: Context, private val repo: Repository) 
     }
     suspend fun restore(b: BackupDocument) = withContext(Dispatchers.IO) {
         BackupCodec.validate(b)
-        repo.mutex.withLock {
-            repo.database.withTransaction {
-                val text = BackupCodec.encode(document())
-                val stream = previous.startWrite()
-                try { stream.write(text.toByteArray(Charsets.UTF_8)); previous.finishWrite(stream) }
-                catch (e: Exception) { previous.failWrite(stream); throw e }
-                val dao = repo.dao
-                dao.clearTimer(); dao.clearIntervals(); dao.clearSessions(); dao.clearEvents(); dao.clearChecklists(); dao.clearTasks(); dao.clearGoals()
-                b.goals.forEach { dao.save(it) }; b.tasks.forEach { dao.save(it) }; b.events.forEach { dao.save(it) }
-                b.checklists.orEmpty().forEach { dao.save(it) }
-                b.sessions.forEach { dao.save(it) }; b.intervals.forEach { dao.save(it) }; dao.save(TimerState())
+        repo.syncEngine?.pauseSync()
+        try {
+            repo.mutex.withLock {
+                repo.database.withTransaction {
+                    val text = BackupCodec.encode(document())
+                    val stream = previous.startWrite()
+                    try { stream.write(text.toByteArray(Charsets.UTF_8)); previous.finishWrite(stream) }
+                    catch (e: Exception) { previous.failWrite(stream); throw e }
+                    val dao = repo.dao
+                    dao.clearTimer(); dao.clearIntervals(); dao.clearSessions(); dao.clearEvents(); dao.clearChecklists(); dao.clearTasks(); dao.clearGoals()
+                    b.goals.forEach { dao.save(it) }; b.tasks.forEach { dao.save(it) }; b.events.forEach { dao.save(it) }
+                    b.checklists.orEmpty().forEach { dao.save(it) }
+                    b.sessions.forEach { dao.save(it) }; b.intervals.forEach { dao.save(it) }; dao.save(TimerState())
+                }
             }
+            repo.reconcile(reschedule = true)
+            repo.syncEngine?.syncAll(replaceRemote = true)
+        } finally {
+            repo.syncEngine?.resumeSync()
         }
-        repo.reconcile(reschedule = true)
     }
     suspend fun exportPrevious(uri: Uri) = withContext(Dispatchers.IO) {
         val text = previous.openRead().bufferedReader(Charsets.UTF_8).use { it.readText() }

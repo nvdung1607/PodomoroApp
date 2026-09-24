@@ -9,13 +9,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -42,22 +49,38 @@ private fun formatFocusDuration(ms: Long): String {
     }
 }
 
-@Composable fun StatsScreen(data: StoreSnapshot) {
+@Composable fun StatsScreen(data: StoreSnapshot, settings: AppSettings = AppSettings()) {
     var periodIndex by rememberSaveable { mutableIntStateOf(0) }
     var dateText by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
     val period = Period.entries[periodIndex]
     val date = LocalDate.parse(dateText)
     val zone = ZoneId.systemDefault()
-    val today = remember { LocalDate.now() }
+    var today by remember { mutableStateOf(LocalDate.now()) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val now = LocalDate.now()
+                if (today != now) today = now
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val report = remember(data, date, period, zone) { Statistics.report(data, date, period, zone) }
     val streak = remember(data, today) { Statistics.dailyStreak(data, today, zone) }
-    val weeklyStats = remember(data, today) { Statistics.weeklyPomodoroStats(data, today, zone) }
+    val weeklyStats = remember(data, date, zone) { Statistics.weeklyPomodoroStats(data, date, zone) }
+    val todayReport = remember(data, today, zone) { Statistics.report(data, today, Period.DAY, zone) }
+    val todayCompleted = todayReport.completed
+    val target = settings.dailyTarget.coerceAtLeast(1)
+    val targetRatio = (todayCompleted.toFloat() / target.toFloat()).coerceIn(0f, 1f)
+    val targetPercent = (todayCompleted * 100) / target
     var selectedCalendarMonth by rememberSaveable { mutableStateOf(java.time.YearMonth.now().toString()) }
     val currentMonth = java.time.YearMonth.parse(selectedCalendarMonth)
-    val monthHeatmap = remember(data, currentMonth) { Statistics.monthHeatmap(data, currentMonth, zone) }
+    val monthHeatmap = remember(data, currentMonth) { Statistics.monthHeatmapStats(data, currentMonth, zone) }
 
     val (start, end) = Statistics.bounds(date, period)
     val from = start.atStartOfDay(zone).toInstant().toEpochMilli()
@@ -106,9 +129,11 @@ private fun formatFocusDuration(ms: Long): String {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val prevDesc = stringResource(R.string.previous_period)
+                        val nextDesc = stringResource(R.string.next_period)
                         FilledTonalIconButton(
                             onClick = { move(-1) },
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(36.dp).semantics { contentDescription = prevDesc },
                             shape = CircleShape
                         ) {
                             Text("‹", fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -123,17 +148,113 @@ private fun formatFocusDuration(ms: Long): String {
                         }
                         FilledTonalIconButton(
                             onClick = { move(1) },
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(36.dp).semantics { contentDescription = nextDesc },
                             shape = CircleShape
                         ) {
                             Text("›", fontSize = 22.sp, fontWeight = FontWeight.Bold)
                         }
                     }
+                    val summaryText = when (period) {
+                        Period.DAY -> if (date == today) {
+                            stringResource(R.string.today_summary, report.completed, report.focusMs / 60000)
+                        } else {
+                            stringResource(R.string.day_summary, report.completed, report.focusMs / 60000)
+                        }
+                        Period.WEEK, Period.MONTH -> stringResource(R.string.period_summary, report.completed, report.focusMs / 60000)
+                    }
                     Text(
-                        stringResource(R.string.today_summary, report.completed, report.focusMs / 60000),
+                        summaryText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 4.dp, start = 8.dp)
+                    )
+                }
+            }
+        }
+
+        // Daily Target Card
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (todayCompleted >= target)
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val fontScale = LocalDensity.current.fontScale
+                    if (fontScale >= 1.3f) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text("🎯", fontSize = 18.sp)
+                                Text(
+                                    stringResource(R.string.daily_target_card_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Text(
+                                stringResource(R.string.daily_target_status, todayCompleted, target, targetPercent),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f, fill = false)
+                            ) {
+                                Text("🎯", fontSize = 18.sp)
+                                Text(
+                                    stringResource(R.string.daily_target_card_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                stringResource(R.string.daily_target_status, todayCompleted, target, targetPercent),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                softWrap = false
+                            )
+                        }
+                    }
+                    LinearProgressIndicator(
+                        progress = { targetRatio },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(5.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                    )
+                    val hintText = if (todayCompleted >= target) {
+                        stringResource(R.string.daily_target_reached)
+                    } else {
+                        stringResource(R.string.daily_target_keep_going, target - todayCompleted)
+                    }
+                    Text(
+                        hintText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -173,8 +294,16 @@ private fun formatFocusDuration(ms: Long): String {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    val isCurrentWeek = weeklyStats.isNotEmpty() && today in weeklyStats.first().date..weeklyStats.last().date
+                    val chartTitle = if (isCurrentWeek) {
+                        stringResource(R.string.daily_chart) + " (" + stringResource(R.string.this_week) + ")"
+                    } else if (weeklyStats.isNotEmpty()) {
+                        stringResource(R.string.daily_chart) + " (" + weeklyStats.first().date.format(DateTimeFormatter.ofPattern("dd/MM")) + " - " + weeklyStats.last().date.format(DateTimeFormatter.ofPattern("dd/MM")) + ")"
+                    } else {
+                        stringResource(R.string.daily_chart)
+                    }
                     Text(
-                        stringResource(R.string.daily_chart),
+                        chartTitle,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -205,14 +334,14 @@ private fun formatFocusDuration(ms: Long): String {
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             FilledTonalIconButton(
                                 onClick = { selectedCalendarMonth = currentMonth.minusMonths(1).toString() },
-                                modifier = Modifier.size(32.dp),
+                                modifier = Modifier.size(32.dp).semantics { contentDescription = "Tháng trước" },
                                 shape = CircleShape
                             ) {
                                 Text("‹", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                             }
                             FilledTonalIconButton(
                                 onClick = { selectedCalendarMonth = currentMonth.plusMonths(1).toString() },
-                                modifier = Modifier.size(32.dp),
+                                modifier = Modifier.size(32.dp).semantics { contentDescription = "Tháng sau" },
                                 shape = CircleShape
                             ) {
                                 Text("›", fontSize = 18.sp, fontWeight = FontWeight.Bold)
@@ -458,10 +587,10 @@ private fun formatFocusDuration(ms: Long): String {
 
 @Composable private fun CalendarHeatmapView(
     yearMonth: java.time.YearMonth,
-    heatmap: Map<LocalDate, Int>,
+    heatmap: Map<LocalDate, DayHeatmapStat>,
     today: LocalDate
 ) {
-    var selectedDateInfo by remember { mutableStateOf<Pair<LocalDate, Int>?>(null) }
+    var selectedDateInfo by remember { mutableStateOf<Pair<LocalDate, DayHeatmapStat>?>(null) }
     val dayHeaders = listOf(R.string.mon, R.string.tue, R.string.wed, R.string.thu, R.string.fri, R.string.sat, R.string.sun)
     val firstDayOfMonth = yearMonth.atDay(1)
     val startDayOfWeek = firstDayOfMonth.dayOfWeek.value // 1 (Mon) to 7 (Sun)
@@ -491,7 +620,9 @@ private fun formatFocusDuration(ms: Long): String {
                     val dayNum = cellIndex - (startDayOfWeek - 1)
                     if (dayNum in 1..daysInMonth) {
                         val cellDate = yearMonth.atDay(dayNum)
-                        val count = heatmap[cellDate] ?: 0
+                        val stat = heatmap[cellDate] ?: DayHeatmapStat(0, 0L)
+                        val count = stat.pomodoroCount
+                        val minutes = stat.focusMs / 60000
                         val isCurrentDay = cellDate == today
                         val isSelected = selectedDateInfo?.first == cellDate
 
@@ -499,11 +630,12 @@ private fun formatFocusDuration(ms: Long): String {
                             count >= 5 -> MaterialTheme.colorScheme.primary
                             count in 3..4 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
                             count in 1..2 -> MaterialTheme.colorScheme.primaryContainer
+                            minutes > 0 -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
                             else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                         }
                         val textColor = when {
                             count >= 3 -> MaterialTheme.colorScheme.onPrimary
-                            count in 1..2 -> MaterialTheme.colorScheme.onPrimaryContainer
+                            count in 1..2 || minutes > 0 -> MaterialTheme.colorScheme.onPrimaryContainer
                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                         }
 
@@ -521,7 +653,7 @@ private fun formatFocusDuration(ms: Long): String {
                                 else it
                             }
                             .clickable {
-                                selectedDateInfo = cellDate to count
+                                selectedDateInfo = cellDate to stat
                             }
 
                         Column(
@@ -533,7 +665,7 @@ private fun formatFocusDuration(ms: Long): String {
                                 text = "$dayNum",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontSize = 11.sp,
-                                fontWeight = if (isCurrentDay || count > 0) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (isCurrentDay || count > 0 || minutes > 0) FontWeight.Bold else FontWeight.Normal,
                                 color = textColor
                             )
                             if (count > 0) {
@@ -541,6 +673,14 @@ private fun formatFocusDuration(ms: Long): String {
                                     text = "${count}🍅",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.ExtraBold,
+                                    color = textColor,
+                                    maxLines = 1
+                                )
+                            } else if (minutes > 0) {
+                                Text(
+                                    text = "${minutes}p",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
                                     color = textColor,
                                     maxLines = 1
                                 )
@@ -554,7 +694,15 @@ private fun formatFocusDuration(ms: Long): String {
         }
 
         // Tap info banner
-        selectedDateInfo?.let { (selDate, selCount) ->
+        selectedDateInfo?.let { (selDate, selStat) ->
+            val selCount = selStat.pomodoroCount
+            val selMins = selStat.focusMs / 60000
+            val infoText = when {
+                selCount > 0 && selMins > 0 -> "$selCount Pomodoro (${selMins}p)"
+                selCount > 0 -> "$selCount Pomodoro"
+                selMins > 0 -> "$selMins phút tập trung"
+                else -> "Chưa có phiên tập trung"
+            }
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
@@ -567,8 +715,7 @@ private fun formatFocusDuration(ms: Long): String {
                 ) {
                     Text("📅", fontSize = 16.sp)
                     Text(
-                        text = "${selDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}: " +
-                                if (selCount > 0) "$selCount Pomodoro (${selCount * 25}p)" else "Chưa có phiên tập trung",
+                        text = "${selDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}: $infoText",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -586,19 +733,31 @@ private fun formatFocusDuration(ms: Long): String {
     var target by rememberSaveable(config.dailyTarget) { mutableStateOf(config.dailyTarget.toString()) }
     var useDnd by rememberSaveable(config.useDnd) { mutableStateOf(config.useDnd) }
     var theme by rememberSaveable(config.theme) { mutableStateOf(config.theme) }
+    val user by model.user.collectAsState()
+    val syncStatus by model.syncStatus.collectAsState()
+    var showAuthDialog by rememberSaveable { mutableStateOf(false) }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { it?.let { uri -> model.export(uri) } }
     val exportPrevious = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { it?.let { uri -> model.export(uri, true) } }
     val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(model::prepareRestore) }
-    val valid = listOf(focus, short, long).all { it.toIntOrNull()?.let { n -> n in 1..180 } == true } && target.toIntOrNull()?.let { it in 1..100 } == true
+    val focusInt = focus.toIntOrNull()
+    val focusError = focusInt == null || focusInt !in 1..180
+    val shortInt = short.toIntOrNull()
+    val shortError = shortInt == null || shortInt !in 1..180
+    val longInt = long.toIntOrNull()
+    val longError = longInt == null || longInt !in 1..180
+    val targetInt = target.toIntOrNull()
+    val targetError = targetInt == null || targetInt !in 1..100
+
+    if (showAuthDialog) {
+        AuthDialog(model = model, onDismiss = { showAuthDialog = false })
+    }
 
     fun applySettings(f: String = focus, s: String = short, l: String = long, t: String = target, dnd: Boolean = useDnd, th: String = theme) {
-        val fVal = f.toIntOrNull()
-        val sVal = s.toIntOrNull()
-        val lVal = l.toIntOrNull()
-        val tVal = t.toIntOrNull()
-        if (fVal != null && fVal in 1..180 && sVal != null && sVal in 1..180 && lVal != null && lVal in 1..180 && tVal != null && tVal in 1..100) {
-            model.saveSettings(AppSettings(fVal, sVal, lVal, tVal, dnd, th))
-        }
+        val fVal = f.toIntOrNull()?.takeIf { it in 1..180 } ?: config.focus
+        val sVal = s.toIntOrNull()?.takeIf { it in 1..180 } ?: config.shortBreak
+        val lVal = l.toIntOrNull()?.takeIf { it in 1..180 } ?: config.longBreak
+        val tVal = t.toIntOrNull()?.takeIf { it in 1..100 } ?: config.dailyTarget
+        model.saveSettings(config.copy(focus = fVal, shortBreak = sVal, longBreak = lVal, dailyTarget = tVal, useDnd = dnd, theme = th))
     }
 
     LazyColumn(
@@ -672,10 +831,22 @@ private fun formatFocusDuration(ms: Long): String {
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-                    TimingSettingRow(R.string.focus_minutes, focus, { focus = it; applySettings(f = it) }, listOf(15, 25, 45, 60))
-                    TimingSettingRow(R.string.short_minutes, short, { short = it; applySettings(s = it) }, listOf(3, 5, 10))
-                    TimingSettingRow(R.string.long_minutes, long, { long = it; applySettings(l = it) }, listOf(15, 20, 30))
-                    NumberField(target, { target = it; applySettings(t = it) }, R.string.daily_target)
+                    TimingSettingRow(
+                        R.string.focus_minutes, focus, { focus = it; applySettings(f = it) }, listOf(15, 25, 45, 60),
+                        isError = focusError, errorMessage = if (focusError) "Từ 1 đến 180 phút" else null
+                    )
+                    TimingSettingRow(
+                        R.string.short_minutes, short, { short = it; applySettings(s = it) }, listOf(3, 5, 10),
+                        isError = shortError, errorMessage = if (shortError) "Từ 1 đến 180 phút" else null
+                    )
+                    TimingSettingRow(
+                        R.string.long_minutes, long, { long = it; applySettings(l = it) }, listOf(15, 20, 30),
+                        isError = longError, errorMessage = if (longError) "Từ 1 đến 180 phút" else null
+                    )
+                    NumberField(
+                        target, { target = it; applySettings(t = it) }, R.string.daily_target,
+                        isError = targetError, errorMessage = if (targetError) "Từ 1 đến 100 Pomodoro" else null
+                    )
 
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -694,6 +865,17 @@ private fun formatFocusDuration(ms: Long): String {
         }
 
         item { PermissionCard(access, model::refresh) }
+
+        // Nhóm Tài khoản & Đồng bộ Đám mây (Firebase 0đ)
+        item {
+            AccountSyncCard(
+                user = user,
+                syncStatus = syncStatus,
+                onOpenAuth = { showAuthDialog = true },
+                onSyncNow = model::manualSync,
+                onLogout = model::logout
+            )
+        }
 
         // Nhóm Sao lưu & Khôi phục
         item {
@@ -736,12 +918,130 @@ private fun formatFocusDuration(ms: Long): String {
     }
 }
 
-@Composable private fun NumberField(value: String, change: (String) -> Unit, label: Int) {
+@Composable
+private fun AccountSyncCard(
+    user: com.google.firebase.auth.FirebaseUser?,
+    syncStatus: SyncStatus,
+    onOpenAuth: () -> Unit,
+    onSyncNow: () -> Unit,
+    onLogout: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            SectionTitle(
+                "Tài khoản & Đồng bộ Đám mây",
+                "Đồng bộ thời gian thực 0đ giữa các thiết bị qua Firebase"
+            )
+
+            if (user == null) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            "📱 Dữ liệu cục bộ (Chưa đồng bộ)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            "Đăng nhập hoặc đăng ký tài khoản miễn phí để tự động đồng bộ công việc và mục tiêu sang các điện thoại khác.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = onOpenAuth,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth().height(46.dp)
+                ) {
+                    Text("🔐 Đăng nhập / Đăng ký đồng bộ", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                }
+            } else {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("👤", fontSize = 18.sp)
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = user.email ?: "Tài khoản của bạn",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            when (syncStatus) {
+                                is SyncStatus.Syncing -> Text("🔄 Đang đồng bộ dữ liệu...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                is SyncStatus.Synced -> Text("🟢 Đã đồng bộ an toàn (0đ)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                is SyncStatus.Error -> Text("⚠️ ${syncStatus.message}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                                is SyncStatus.Idle -> Text("Đã sẵn sàng đồng bộ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = onSyncNow,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.weight(1f).height(46.dp)
+                    ) {
+                        Text("🔄 Đồng bộ", style = MaterialTheme.typography.labelMedium)
+                    }
+                    OutlinedButton(
+                        onClick = onLogout,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.weight(1f).height(46.dp)
+                    ) {
+                        Text("Đăng xuất", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable private fun NumberField(
+    value: String,
+    change: (String) -> Unit,
+    label: Int,
+    isError: Boolean = false,
+    errorMessage: String? = null
+) {
     OutlinedTextField(
         value = value,
         onValueChange = change,
         modifier = Modifier.fillMaxWidth(),
         label = { Text(stringResource(label)) },
+        isError = isError,
+        supportingText = if (isError && errorMessage != null) {
+            { Text(errorMessage, color = MaterialTheme.colorScheme.error) }
+        } else null,
         shape = RoundedCornerShape(14.dp),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         singleLine = true
@@ -752,10 +1052,12 @@ private fun formatFocusDuration(ms: Long): String {
     label: Int,
     value: String,
     onValueChange: (String) -> Unit,
-    presets: List<Int>
+    presets: List<Int>,
+    isError: Boolean = false,
+    errorMessage: String? = null
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        NumberField(value, onValueChange, label)
+        NumberField(value, onValueChange, label, isError = isError, errorMessage = errorMessage)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)

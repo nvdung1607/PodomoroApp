@@ -29,10 +29,19 @@ object TimerRules {
         (state.remainingMs - (elapsed - state.segmentElapsed).coerceAtLeast(0)).coerceAtLeast(0) else state.remainingMs
     fun consumed(state: TimerState, elapsed: Long): Long = state.remainingMs - remaining(state, elapsed)
     fun breakAfter(completed: Int, settings: AppSettings): Int = if (completed % 4 == 0) settings.longBreak else settings.shortBreak
+    fun shouldResetCycle(lastCompletedAt: Long?, nowWall: Long, zone: ZoneId = ZoneId.systemDefault()): Boolean {
+        if (lastCompletedAt == null) return false
+        val lastDate = Instant.ofEpochMilli(lastCompletedAt).atZone(zone).toLocalDate()
+        val today = Instant.ofEpochMilli(nowWall).atZone(zone).toLocalDate()
+        if (lastDate < today) return true
+        val threeHoursMs = 3 * 60 * 60 * 1000L
+        return (nowWall - lastCompletedAt) > threeHoursMs
+    }
 }
 
 data class Report(val focusMs: Long, val completed: Int, val interrupted: Int, val completedTasks: Int, val daily: List<Pair<LocalDate, Long>>)
 data class DailyPomodoroStat(val date: LocalDate, val focusMs: Long, val pomodoroCount: Int)
+data class DayHeatmapStat(val pomodoroCount: Int, val focusMs: Long)
 
 object Statistics {
     fun bounds(date: LocalDate, period: Period): Pair<LocalDate, LocalDate> {
@@ -94,21 +103,30 @@ object Statistics {
         }
     }
 
-    fun monthHeatmap(data: StoreSnapshot, yearMonth: YearMonth, zone: ZoneId): Map<LocalDate, Int> {
-        val startOfMonth = yearMonth.atDay(1)
+    fun monthHeatmapStats(data: StoreSnapshot, yearMonth: YearMonth, zone: ZoneId): Map<LocalDate, DayHeatmapStat> {
         val length = yearMonth.lengthOfMonth()
+        val startOfMonth = yearMonth.atDay(1)
         val startMs = startOfMonth.atStartOfDay(zone).toInstant().toEpochMilli()
         val endMs = startOfMonth.plusMonths(1).atStartOfDay(zone).toInstant().toEpochMilli()
 
-        val sessions = data.sessions.filter { it.status == "COMPLETED" && it.endedAt != null && it.endedAt in startMs until endMs }
-        val counts = mutableMapOf<LocalDate, Int>()
+        val completedSessions = data.sessions.filter { it.status == "COMPLETED" && it.endedAt != null && it.endedAt in startMs until endMs }
+        val intervals = data.intervals
+
+        val result = mutableMapOf<LocalDate, DayHeatmapStat>()
         for (dayNum in 1..length) {
-            counts[yearMonth.atDay(dayNum)] = 0
+            val day = yearMonth.atDay(dayNum)
+            val dayStart = day.atStartOfDay(zone).toInstant().toEpochMilli()
+            val dayEnd = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val count = completedSessions.count { it.endedAt!! in dayStart until dayEnd }
+            val focusMs = intervals.sumOf {
+                (minOf(dayEnd, it.startedAt + it.durationMs) - maxOf(dayStart, it.startedAt)).coerceAtLeast(0)
+            }
+            result[day] = DayHeatmapStat(count, focusMs)
         }
-        for (session in sessions) {
-            val date = Instant.ofEpochMilli(session.endedAt!!).atZone(zone).toLocalDate()
-            counts[date] = (counts[date] ?: 0) + 1
-        }
-        return counts
+        return result
+    }
+
+    fun monthHeatmap(data: StoreSnapshot, yearMonth: YearMonth, zone: ZoneId): Map<LocalDate, Int> {
+        return monthHeatmapStats(data, yearMonth, zone).mapValues { it.value.pomodoroCount }
     }
 }

@@ -24,6 +24,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val pendingRestore = MutableStateFlow<BackupDocument?>(null)
     val feedback = Channel<Feedback>(Channel.BUFFERED)
     val busy = MutableStateFlow(false)
+    val auth = container.authService
+    val syncEngine = container.syncEngine
+    val user = auth.authState.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), auth.currentUser)
+    val syncStatus = syncEngine.syncStatus.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SyncStatus.Idle)
+    val authError = MutableStateFlow<String?>(null)
     private val visible = MutableStateFlow(false)
     fun setVisible(value: Boolean) { visible.value = value }
     init {
@@ -46,12 +51,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun refreshAccess() {
         access.value = DeviceAccess(container.scheduler.exactAvailable(), NotificationManagerCompat.from(getApplication()).areNotificationsEnabled(), container.dnd.hasPermission(), dndActive = container.dnd.active())
     }
-    fun saveTask(task: TaskItem) = action { repo.saveTask(task) }
+    fun saveTask(task: TaskItem, onSuccess: (() -> Unit)? = null) = action {
+        repo.saveTask(task)
+        onSuccess?.invoke()
+    }
     fun done(task: TaskItem, value: Boolean) = action { repo.setTaskDone(task.id, value) }
     fun delete(task: TaskItem) = action { repo.deleteTask(task.id); feedback.send(Feedback(R.string.task_deleted) { repo.deleteTask(task.id, true) }) }
     fun saveChecklist(item: ChecklistItem) = action { repo.saveChecklist(item) }
     fun doneChecklist(item: ChecklistItem, value: Boolean) = action { repo.setChecklistDone(item.id, value) }
-    fun deleteChecklist(item: ChecklistItem) = action { repo.deleteChecklist(item.id) }
+    fun deleteChecklist(item: ChecklistItem) = action {
+        repo.deleteChecklist(item.id)
+        feedback.send(Feedback(R.string.checklist_deleted) { repo.saveChecklist(item) })
+    }
     fun saveGoal(goal: GoalItem) = action { repo.saveGoal(goal) }
     fun delete(goal: GoalItem) = action { val ids = repo.deleteGoal(goal.id); feedback.send(Feedback(R.string.goal_deleted) { repo.restoreGoal(goal.id, ids) }) }
     fun start(taskId: String?, goalId: String?, minutes: Int? = null) = action { repo.startFocus(taskId, goalId, minutes); refreshAccess() }
@@ -61,6 +72,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun pause() = action { repo.pause(); refreshAccess() }
     fun resume() = action { repo.resume(); refreshAccess() }
     fun stop() = action { repo.stop(); refreshAccess() }
+    fun resetCycle() = action { repo.resetCycle() }
     fun saveSettings(settings: AppSettings) = action { container.settings.save(settings); repo.reconcile(reschedule = true); refreshAccess(); feedback.send(Feedback(R.string.saved)) }
     fun undo(block: suspend () -> Unit) = action(block)
     fun export(uri: Uri, previous: Boolean = false) = action {
@@ -73,4 +85,40 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         busy.value = true
         try { backup.restore(document); pendingRestore.value = null; feedback.send(Feedback(R.string.restore_done)) } finally { busy.value = false }
     }
+    fun clearAuthError() { authError.value = null }
+    fun login(email: String, pass: String, onSuccess: () -> Unit) = action {
+        authError.value = null
+        busy.value = true
+        try {
+            when (val res = auth.signInWithEmail(email, pass)) {
+                is AuthResult.Success -> onSuccess()
+                is AuthResult.Error -> authError.value = res.message
+            }
+        } finally { busy.value = false }
+    }
+    fun register(email: String, pass: String, onSuccess: () -> Unit) = action {
+        authError.value = null
+        busy.value = true
+        try {
+            when (val res = auth.registerWithEmail(email, pass)) {
+                is AuthResult.Success -> onSuccess()
+                is AuthResult.Error -> authError.value = res.message
+            }
+        } finally { busy.value = false }
+    }
+    fun sendPasswordReset(email: String, onSuccess: () -> Unit) = action {
+        authError.value = null
+        busy.value = true
+        try {
+            when (val res = auth.sendPasswordResetEmail(email)) {
+                is AuthResult.Success -> {
+                    feedback.send(Feedback(R.string.password_reset_sent))
+                    onSuccess()
+                }
+                is AuthResult.Error -> authError.value = res.message
+            }
+        } finally { busy.value = false }
+    }
+    fun logout() = action { auth.signOut() }
+    fun manualSync() = action { syncEngine.syncAll() }
 }

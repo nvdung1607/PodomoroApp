@@ -24,9 +24,18 @@ class RepositoryTest {
     private var dndActive = false
     @Before fun setup() {
         db = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext, AppDatabase::class.java).build()
-        repo = Repository(db, settings, clock, object : EndScheduler {
-            override fun schedule(state: TimerState) {} ; override fun cancel() {}; override fun completed(focus: Boolean) { notifications++ }
-        }) { dndActive = it }
+        repo = Repository(
+            database = db,
+            settings = settings,
+            clock = clock,
+            scheduler = object : EndScheduler {
+                override fun schedule(state: TimerState) {}
+                override fun cancel() {}
+                override fun completed(focus: Boolean) { notifications++ }
+            },
+            dnd = { dndActive = it },
+            syncEngine = null
+        )
     }
     @After fun close() { db.close() }
     private suspend fun task(): TaskItem = TaskItem(title = "Học Compose", note = "Ghi chú tiếng Việt").also { repo.saveTask(it) }
