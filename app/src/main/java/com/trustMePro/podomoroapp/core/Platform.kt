@@ -239,15 +239,10 @@ class AndroidScheduler(private val context: Context) : EndScheduler {
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
         if (Build.VERSION.SDK_INT >= 26) {
-            val audioAttr = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-            val channel = NotificationChannel("timer_alarm_v1", "Báo thức FocusDo", NotificationManager.IMPORTANCE_HIGH).apply {
+            val channel = NotificationChannel("timer_alarm_v2", "Báo thức FocusDo", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Chuông báo thức khi hoàn thành phiên"
-                enableVibration(true)
-                setSound(soundUri, audioAttr)
-                setBypassDnd(true)
+                enableVibration(false)
+                setSound(null, null)
             }
             manager.createNotificationChannel(channel)
         }
@@ -263,13 +258,14 @@ class AndroidScheduler(private val context: Context) : EndScheduler {
         )
         val title = if (focus) context.getString(R.string.focus_finished) else context.getString(R.string.break_finished_title)
         val hint = if (focus) context.getString(R.string.finished_hint) else context.getString(R.string.break_finished_hint)
-        val notification = NotificationCompat.Builder(context, "timer_alarm_v1")
+        val notification = NotificationCompat.Builder(context, "timer_alarm_v2")
             .setSmallIcon(R.drawable.ic_timer_notification)
             .setContentTitle("🔔 $title")
             .setContentText(hint)
             .setContentIntent(open)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setSound(null)
             .addAction(0, "🔕 Tắt chuông", actionPending("TIMER_DISMISS_ALARM", 106))
             .setOngoing(true)
             .setAutoCancel(false)

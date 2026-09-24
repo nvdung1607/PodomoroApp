@@ -236,4 +236,10 @@ class RulesTest {
         val twoAndHalfHoursAgo = tenAmToday - (150 * 60_000L)
         assertFalse(TimerRules.shouldResetCycle(twoAndHalfHoursAgo, tenAmToday, zone))
     }
+
+    @Test fun alarmSoundOnlyPlaysInNormalRingerMode() {
+        assertTrue(AlarmPlayer.shouldPlaySound(android.media.AudioManager.RINGER_MODE_NORMAL))
+        assertFalse(AlarmPlayer.shouldPlaySound(android.media.AudioManager.RINGER_MODE_VIBRATE))
+        assertFalse(AlarmPlayer.shouldPlaySound(android.media.AudioManager.RINGER_MODE_SILENT))
+    }
 }

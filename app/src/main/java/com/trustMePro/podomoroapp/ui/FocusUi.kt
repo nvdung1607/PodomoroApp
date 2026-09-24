@@ -1161,22 +1161,26 @@ private fun BreakCardContent(
     currentTask: TaskItem?,
     onFinishTask: (TaskItem) -> Unit
 ) {
+    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+    val isLargeFont = fontScale >= 1.3f
+
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            Modifier.padding(20.dp),
+            Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text("🎉", fontSize = 40.sp)
             Text(
                 stringResource(R.string.ready_break),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             Text(
                 stringResource(R.string.break_offer, selectedBreakMinutes),
@@ -1184,51 +1188,168 @@ private fun BreakCardContent(
                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.9f),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
+
+            // Preset duration chips with identical height, compact padding and high contrast
             val breakPresets = listOf(3, 5, 10, 15)
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val chipColors = FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedContainerColor = MaterialTheme.colorScheme.secondary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onSecondary
+                )
                 breakPresets.forEach { mins ->
                     val selected = selectedBreakMinutes == mins
                     FilterChip(
                         selected = selected,
                         onClick = { onSelectBreak(mins) },
-                        shape = RoundedCornerShape(10.dp),
-                        label = { Text("${mins}p", fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) }
+                        shape = RoundedCornerShape(12.dp),
+                        colors = chipColors,
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = selected,
+                            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                            selectedBorderColor = MaterialTheme.colorScheme.secondary
+                        ),
+                        label = {
+                            Text(
+                                "${mins}p",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
                     )
                 }
                 val isCustomBreak = selectedBreakMinutes !in breakPresets
                 FilterChip(
                     selected = isCustomBreak,
                     onClick = onCustomBreak,
-                    shape = RoundedCornerShape(10.dp),
-                    label = { Text(if (isCustomBreak) "${selectedBreakMinutes}p" else stringResource(R.string.custom_minutes)) }
+                    shape = RoundedCornerShape(12.dp),
+                    colors = chipColors,
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = isCustomBreak,
+                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                        selectedBorderColor = MaterialTheme.colorScheme.secondary
+                    ),
+                    label = {
+                        Text(
+                            if (isCustomBreak) "${selectedBreakMinutes}p" else stringResource(R.string.custom_minutes),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isCustomBreak) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 )
             }
+
             Spacer(Modifier.height(4.dp))
-            Button(
-                onClick = onStartBreak,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-            ) {
-                Text(
-                    "☕  " + stringResource(R.string.start_break),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            TextButton(onClick = onSkipBreak) {
-                Text(stringResource(R.string.skip_break), style = MaterialTheme.typography.labelLarge)
-            }
+
+            // Task completion button if linked to task
             currentTask?.let { current ->
                 OutlinedButton(
                     onClick = { onFinishTask(current) },
                     shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.2.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f))
                 ) {
-                    Text("✓  " + stringResource(R.string.finish_task), style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        "✓  " + stringResource(R.string.finish_task),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
+                    )
+                }
+            }
+
+            // Balanced break action buttons (equal width, aligned height)
+            if (isLargeFont) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onStartBreak,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        Text(
+                            "☕  " + stringResource(R.string.start_break),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = onSkipBreak,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            "⏭  " + stringResource(R.string.skip_break),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1
+                        )
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = onSkipBreak,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            "⏭ " + stringResource(R.string.skip_break),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+                    Button(
+                        onClick = onStartBreak,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        Text(
+                            "☕ " + stringResource(R.string.start_break),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
             }
         }

@@ -46,6 +46,7 @@ private val destinations = listOf(
     val restore by model.pendingRestore.collectAsStateWithLifecycle()
     val user by model.user.collectAsStateWithLifecycle()
     val isRinging by AlarmPlayer.isRinging.collectAsStateWithLifecycle()
+    val isSoundActive by AlarmPlayer.isSoundActive.collectAsStateWithLifecycle()
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "tasks"
@@ -336,10 +337,14 @@ private val destinations = listOf(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("🔔", fontSize = 24.sp)
+                            Text(if (isSoundActive) "🔔" else "📳", fontSize = 24.sp)
                             Column {
                                 Text("Hết giờ đếm ngược!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
-                                Text("Đang đổ chuông báo thức...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onErrorContainer)
+                                Text(
+                                    if (isSoundActive) "Đang đổ chuông báo thức..." else "Đang rung báo hết giờ...",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
                             }
                         }
                         Button(
@@ -347,7 +352,11 @@ private val destinations = listOf(
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("🔕 Tắt chuông", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onError)
+                            Text(
+                                if (isSoundActive) "🔕 Tắt chuông" else "📳 Tắt rung",
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onError
+                            )
                         }
                     }
                 }

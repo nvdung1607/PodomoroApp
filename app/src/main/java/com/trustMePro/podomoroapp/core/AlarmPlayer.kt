@@ -19,6 +19,9 @@ object AlarmPlayer {
     private val _isRinging = MutableStateFlow(false)
     val isRinging: StateFlow<Boolean> = _isRinging.asStateFlow()
 
+    private val _isSoundActive = MutableStateFlow(false)
+    val isSoundActive: StateFlow<Boolean> = _isSoundActive.asStateFlow()
+
     private var activeRingtone: Ringtone? = null
     private var activeVibrator: Any? = null
     private var autoStopJob: Job? = null
@@ -26,32 +29,40 @@ object AlarmPlayer {
 
     private val alarmVibrationPattern = longArrayOf(0, 800, 400, 800, 400, 800)
 
+    fun shouldPlaySound(ringerMode: Int): Boolean = ringerMode == android.media.AudioManager.RINGER_MODE_NORMAL
+
     @Synchronized
     fun startAlarm(context: Context, focus: Boolean = true) {
         stopAlarm(context)
         _isRinging.value = true
 
         val appContext = context.applicationContext
-        val soundUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
+        val ringerMode = audioManager?.ringerMode ?: android.media.AudioManager.RINGER_MODE_NORMAL
+        val shouldPlay = shouldPlaySound(ringerMode)
+        _isSoundActive.value = shouldPlay
 
-        // 1. Play continuous alarm sound with USAGE_ALARM to ensure loud volume and DND bypass
-        try {
-            val ringtone = RingtoneManager.getRingtone(appContext, soundUri)
-            if (Build.VERSION.SDK_INT >= 21) {
-                ringtone?.audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            }
-            if (Build.VERSION.SDK_INT >= 28) {
-                ringtone?.isLooping = true
-            }
-            ringtone?.play()
-            activeRingtone = ringtone
-        } catch (_: Exception) { }
+        // 1. Play continuous alarm sound ONLY when phone is in normal ring mode
+        if (shouldPlay) {
+            val soundUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            try {
+                val ringtone = RingtoneManager.getRingtone(appContext, soundUri)
+                if (Build.VERSION.SDK_INT >= 21) {
+                    ringtone?.audioAttributes = AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                }
+                if (Build.VERSION.SDK_INT >= 28) {
+                    ringtone?.isLooping = true
+                }
+                ringtone?.play()
+                activeRingtone = ringtone
+            } catch (_: Exception) { }
+        }
 
-        // 2. Hardware vibration with repeating pattern
+        // 2. Hardware vibration with repeating pattern (in all modes: ring, vibrate, silent)
         try {
             if (Build.VERSION.SDK_INT >= 31) {
                 val vm = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
@@ -99,6 +110,7 @@ object AlarmPlayer {
         } catch (_: Exception) { }
         activeVibrator = null
 
+        _isSoundActive.value = false
         _isRinging.value = false
 
         if (context != null) {
@@ -111,19 +123,24 @@ object AlarmPlayer {
 
     fun playWarningTing(context: Context) {
         val appContext = context.applicationContext
-        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
+        val ringerMode = audioManager?.ringerMode ?: android.media.AudioManager.RINGER_MODE_NORMAL
+        val shouldPlay = shouldPlaySound(ringerMode)
 
-        // 1. Play single gentle notification sound
-        try {
-            val ringtone = RingtoneManager.getRingtone(appContext, soundUri)
-            if (Build.VERSION.SDK_INT >= 21) {
-                ringtone?.audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            }
-            ringtone?.play()
-        } catch (_: Exception) { }
+        // 1. Play single gentle notification sound ONLY if in normal ring mode
+        if (shouldPlay) {
+            val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            try {
+                val ringtone = RingtoneManager.getRingtone(appContext, soundUri)
+                if (Build.VERSION.SDK_INT >= 21) {
+                    ringtone?.audioAttributes = AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                }
+                ringtone?.play()
+            } catch (_: Exception) { }
+        }
 
         // 2. Gentle single vibration tick (150ms)
         try {
@@ -138,3 +155,4 @@ object AlarmPlayer {
         } catch (_: Exception) { }
     }
 }
+
